@@ -16,6 +16,7 @@ public sealed class ThirdPersonCamera : MonoBehaviour // 3인칭 카메라 관�
     [SerializeField] private float minPitch = -35f; // 최소 상하 각도
     [SerializeField] private float maxPitch = 70f; // 최대 상하 각도
     [SerializeField] private float distanceSmoothTime = 0.04f; // 거리 복귀 보간 시간
+    [SerializeField] private float rollSmoothSpeed = 8f; // 롤 보간 속도
 
     [Header("Collision")] // 충돌 설정 구분
     [SerializeField] private float collisionRadius = 0.25f; // 카메라 충돌 반경
@@ -28,6 +29,8 @@ public sealed class ThirdPersonCamera : MonoBehaviour // 3인칭 카메라 관�
     private float pitch = 15f; // 현재 상하 각도
     private float currentDistance; // 현재 카메라 거리
     private float distanceVelocity; // 거리 보간 속도
+    private float targetRoll; // 목표 롤 각도
+    private float currentRoll; // 현재 롤 각도
 
     private void Awake() // 초기 카메라 설정
     {
@@ -64,7 +67,8 @@ public sealed class ThirdPersonCamera : MonoBehaviour // 3인칭 카메라 관�
             return; // 카메라 갱신 중단
         }
 
-        Quaternion orbitRotation = Quaternion.Euler(pitch, yaw, 0f); // 카메라 회전 계산
+        currentRoll = Mathf.Lerp(currentRoll, targetRoll, Time.deltaTime * rollSmoothSpeed); // 롤 보간 적용
+        Quaternion orbitRotation = Quaternion.Euler(pitch, yaw, currentRoll); // 카메라 회전 계산
         Vector3 pivotPosition = target.position + pivotOffset; // 카메라 중심 위치 계산
         Vector3 backwardDirection = orbitRotation * Vector3.back; // 카메라 후방 방향 계산
         float collisionDistance = GetCollisionDistance(pivotPosition, backwardDirection); // 충돌 보정 거리 계산
@@ -80,6 +84,11 @@ public sealed class ThirdPersonCamera : MonoBehaviour // 3인칭 카메라 관�
         yaw = target != null ? target.eulerAngles.y : yaw; // 초기 좌우 각도 갱신
         currentDistance = distance; // 현재 거리 초기화
         ResolveLookAction(); // 시점 입력 연결
+    }
+
+    public void SetAdditionalRoll(float roll) // 카메라 추가 롤 지정
+    {
+        targetRoll = roll; // 목표 롤 저장
     }
 
     private void ResolveLookAction() // 시점 입력 연결

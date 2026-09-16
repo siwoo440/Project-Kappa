@@ -45,10 +45,20 @@ public sealed class PlayerMovement : MonoBehaviour // 플레이어 이동 관리
     private Vector3 spawnPosition; // 시작 위치
     private Quaternion spawnRotation; // 시작 회전
     private bool isCrouching; // 현재 앉기 상태
+    private bool movementEnabled = true; // 이동 활성 상태
 
     public bool IsGrounded => controller != null && controller.isGrounded; // 지면 상태 읽기
     public bool IsCrouching => isCrouching; // 앉기 상태 읽기
+    public bool MovementEnabled => movementEnabled; // 이동 활성 상태 읽기
     public Vector3 HorizontalVelocity => horizontalVelocity; // 수평 속도 읽기
+    public float VerticalVelocity // 수직 속도 읽기쓰기
+    {
+        get => verticalVelocity; // 수직 속도 반환
+        set => verticalVelocity = value; // 수직 속도 저장
+    }
+    public PlayerInput PlayerInput => playerInput; // 입력 참조 읽기
+    public Camera MovementCamera => movementCamera; // 이동 카메라 읽기
+    public CharacterController Controller => controller; // 캐릭터 컨트롤러 읽기
 
     private void Awake() // 초기 참조 설정
     {
@@ -72,6 +82,12 @@ public sealed class PlayerMovement : MonoBehaviour // 플레이어 이동 관리
 
     private void Update() // 매 프레임 이동 처리
     {
+        if (!movementEnabled) // 이동 활성 상태 확인
+        {
+            HandleFallRespawn(); // 추락 복귀 처리
+            return; // 일반 이동 처리 중단
+        }
+
         UpdateGroundTimers(); // 지면 관련 시간 갱신
         UpdateJumpBuffer(); // 점프 입력 저장 갱신
         HandleCrouch(); // 앉기 처리
@@ -91,6 +107,37 @@ public sealed class PlayerMovement : MonoBehaviour // 플레이어 이동 관리
     {
         spawnPosition = position; // 복귀 위치 저장
         spawnRotation = rotation; // 복귀 회전 저장
+    }
+
+    public void SetMovementEnabled(bool enabled) // 이동 활성 상태 변경
+    {
+        movementEnabled = enabled; // 이동 활성 상태 저장
+
+        if (!enabled) // 이동 비활성 확인
+        {
+            horizontalVelocity = Vector3.zero; // 수평 속도 초기화
+            jumpBufferTimer = 0f; // 점프 저장 초기화
+        }
+    }
+
+    public void SetHorizontalVelocity(Vector3 velocity) // 수평 속도 강제 지정
+    {
+        horizontalVelocity = velocity; // 수평 속도 저장
+    }
+
+    public Vector2 GetMoveInput() // 현재 이동 입력 조회
+    {
+        return moveAction != null ? moveAction.ReadValue<Vector2>() : Vector2.zero; // 이동 입력 반환
+    }
+
+    public bool WasJumpPressedThisFrame() // 점프 입력 확인
+    {
+        return jumpAction != null && jumpAction.WasPressedThisFrame(); // 점프 입력 여부 반환
+    }
+
+    public bool IsCrouchHeld() // 앉기 입력 확인
+    {
+        return crouchAction != null && crouchAction.IsPressed(); // 앉기 입력 여부 반환
     }
 
     private void ResolveActions() // 입력 액션 연결
