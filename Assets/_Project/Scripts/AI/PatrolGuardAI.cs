@@ -22,6 +22,7 @@ public sealed class PatrolGuardAI : MonoBehaviour // E-01 순찰 경비 행동 �
 
     private CharacterController controller; // 캐릭터 컨트롤러 참조
     private DetectionSensor sensor; // 탐지 센서 참조
+    private EnemyActor actor; // 적 생명 관리자 참조
     private Transform target; // 플레이어 대상 참조
     private Transform[] patrolPoints; // 순찰 지점 배열
     private GuardState state; // 현재 경비 상태
@@ -34,10 +35,17 @@ public sealed class PatrolGuardAI : MonoBehaviour // E-01 순찰 경비 행동 �
     {
         controller = GetComponent<CharacterController>(); // 캐릭터 컨트롤러 조회
         sensor = GetComponent<DetectionSensor>(); // 탐지 센서 조회
+        actor = GetComponent<EnemyActor>(); // 적 생명 관리자 조회
     }
 
     private void Update() // 매 프레임 행동 처리
     {
+        if (actor != null && (actor.IsDead || actor.IsPostureBroken)) // 행동 정지 상태 확인
+        {
+            ApplyGravity(); // 중력 처리 유지
+            return; // 행동 처리 중단
+        }
+
         UpdateStateFromSensor(); // 탐지 상태 기반 행동 갱신
 
         switch (state) // 행동 상태 분기
@@ -144,6 +152,7 @@ public sealed class PatrolGuardAI : MonoBehaviour // E-01 순찰 경비 행동 �
 
         Vector3 investigatePosition = sensor.LastKnownPosition; // 조사 위치 저장
         float distance = GetPlanarDistance(transform.position, investigatePosition); // 조사 위치 거리 계산
+
         if (distance > arrivalDistance) // 조사 지점 도착 여부 확인
         {
             MoveTowards(investigatePosition, patrolSpeed); // 조사 위치 이동
@@ -158,6 +167,7 @@ public sealed class PatrolGuardAI : MonoBehaviour // E-01 순찰 경비 행동 �
         if (sensor.HasLastKnownPosition) // 마지막 위치 확인
         {
             float distance = GetPlanarDistance(transform.position, sensor.LastKnownPosition); // 마지막 위치 거리 계산
+
             if (distance > arrivalDistance) // 마지막 위치 도착 여부 확인
             {
                 MoveTowards(sensor.LastKnownPosition, patrolSpeed); // 마지막 위치 이동
@@ -187,6 +197,7 @@ public sealed class PatrolGuardAI : MonoBehaviour // E-01 순찰 경비 행동 �
     private void RotateTowards(Vector3 direction) // 방향 회전 처리
     {
         direction.y = 0f; // 수직 성분 제거
+
         if (direction.sqrMagnitude <= 0.0001f) // 방향 유효성 확인
         {
             return; // 회전 중단

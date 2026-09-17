@@ -25,6 +25,7 @@ public sealed class PlayerCombatController : MonoBehaviour // 플레이어 기�
     private PlayerInput playerInput; // 플레이어 입력 참조
     private InputAction attackAction; // 공격 입력 액션
     private PlayerDirectionIndicator directionIndicator; // 방향 표시 참조
+    private PlayerDefenseController defenseController; // 방어 관리자 참조
     private Quaternion weaponBaseRotation; // 무기 기본 회전
     private float attackTimer; // 현재 공격 시간
     private float nextAttackTime; // 다음 공격 가능 시간
@@ -39,6 +40,7 @@ public sealed class PlayerCombatController : MonoBehaviour // 플레이어 기�
     {
         playerInput = GetComponent<PlayerInput>(); // 플레이어 입력 조회
         directionIndicator = GetComponent<PlayerDirectionIndicator>(); // 방향 표시 조회
+        defenseController = GetComponent<PlayerDefenseController>(); // 방어 관리자 조회
         ResolveAttackAction(); // 공격 액션 연결
 
         if (weaponSocket != null) // 무기 소켓 확인
@@ -61,6 +63,11 @@ public sealed class PlayerCombatController : MonoBehaviour // 플레이어 기�
         }
 
         if (externalLock || attackAction == null) // 공격 잠금과 입력 확인
+        {
+            return; // 공격 처리 중단
+        }
+
+        if (defenseController != null && defenseController.IsDefending) // 방어 상태 확인
         {
             return; // 공격 처리 중단
         }
@@ -154,7 +161,7 @@ public sealed class PlayerCombatController : MonoBehaviour // 플레이어 기�
             weaponSocket.localRotation = weaponBaseRotation; // 무기 기본 회전 복구
         }
 
-        if (directionIndicator != null) // 방향 표시 확인
+        if (directionIndicator != null && (defenseController == null || !defenseController.IsDefending)) // 방향 표시 복구 조건 확인
         {
             directionIndicator.SetSuppressed(false); // 방향 표시 복구
         }
@@ -224,8 +231,8 @@ public sealed class PlayerCombatController : MonoBehaviour // 플레이어 기�
         style.alignment = TextAnchor.MiddleCenter; // 중앙 정렬 적용
         style.fontSize = 16; // 글자 크기 적용
         style.normal.textColor = Color.white; // 글자 색상 적용
-        Rect rect = new Rect(18f, Screen.height - 62f, 220f, 38f); // 안내 위치 계산
-        GUI.Box(rect, "[LMB] 절선 기본 공격", style); // 공격 안내 표시
+        Rect rect = new Rect(18f, Screen.height - 62f, 310f, 38f); // 안내 위치 계산
+        GUI.Box(rect, "[LMB] 공격  [RMB] 방어/받아치기", style); // 공격 방어 안내 표시
     }
 
     private void OnDrawGizmosSelected() // 공격 범위 에디터 표시
