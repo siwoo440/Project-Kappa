@@ -12,6 +12,7 @@ public sealed class PlayerInteraction : MonoBehaviour // 플레이어 상호작�
     private PlayerInput playerInput; // 플레이어 입력 참조
     private InputAction interactAction; // 상호작용 입력 액션
     private IInteractable currentInteractable; // 현재 상호작용 대상
+    private PlayerAssassination assassination; // 암살 관리자 참조
     private string currentLabel = string.Empty; // 현재 상호작용 이름
 
     public string CurrentLabel => currentLabel; // 현재 상호작용 이름 읽기
@@ -20,6 +21,7 @@ public sealed class PlayerInteraction : MonoBehaviour // 플레이어 상호작�
     private void Awake() // 초기 참조 설정
     {
         playerInput = GetComponent<PlayerInput>(); // 플레이어 입력 조회
+        assassination = GetComponent<PlayerAssassination>(); // 암살 관리자 조회
         interactionCamera = interactionCamera != null ? interactionCamera : Camera.main; // 상호작용 카메라 보정
         ResolveAction(); // 입력 액션 연결
     }
@@ -36,14 +38,29 @@ public sealed class PlayerInteraction : MonoBehaviour // 플레이어 상호작�
             interactionCamera = Camera.main; // 메인 카메라 재조회
         }
 
+        if (assassination == null) // 암살 관리자 확인
+        {
+            assassination = GetComponent<PlayerAssassination>(); // 암살 관리자 재조회
+        }
+
         FindInteractionTarget(); // 상호작용 대상 탐색
 
-        if (currentInteractable == null || interactAction == null) // 대상과 입력 확인
+        if (interactAction == null) // 입력 액션 확인
         {
             return; // 상호작용 처리 중단
         }
 
         if (!interactAction.WasPressedThisFrame()) // F 입력 확인
+        {
+            return; // 상호작용 처리 중단
+        }
+
+        if (assassination != null && assassination.TryAssassinate()) // 암살 우선 처리 확인
+        {
+            return; // 일반 상호작용 중단
+        }
+
+        if (currentInteractable == null) // 일반 상호작용 대상 확인
         {
             return; // 상호작용 처리 중단
         }
@@ -88,18 +105,21 @@ public sealed class PlayerInteraction : MonoBehaviour // 플레이어 상호작�
         for (int i = 0; i < hits.Length; i++) // 충돌 후보 순회
         {
             Collider hitCollider = hits[i].collider; // 충돌 콜라이더 조회
+
             if (hitCollider == null) // 콜라이더 확인
             {
                 continue; // 누락 후보 제외
             }
 
             Transform hitTransform = hitCollider.transform; // 충돌 트랜스폼 조회
+
             if (hitTransform == transform || hitTransform.IsChildOf(transform)) // 자기 자신 충돌 확인
             {
                 continue; // 자기 충돌 제외
             }
 
             IInteractable interactable = FindInteractable(hitCollider); // 상호작용 컴포넌트 조회
+
             if (interactable == null) // 상호작용 대상 확인
             {
                 continue; // 일반 충돌 제외
@@ -125,6 +145,7 @@ public sealed class PlayerInteraction : MonoBehaviour // 플레이어 상호작�
     private static IInteractable FindInteractable(Collider targetCollider) // 상호작용 컴포넌트 조회
     {
         MonoBehaviour[] behaviours = targetCollider.GetComponentsInParent<MonoBehaviour>(true); // 상위 스크립트 목록 조회
+
         for (int i = 0; i < behaviours.Length; i++) // 스크립트 목록 순회
         {
             if (behaviours[i] is IInteractable interactable) // 상호작용 인터페이스 확인
