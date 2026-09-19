@@ -37,7 +37,8 @@ public sealed class FirearmPracticeTarget : MonoBehaviour // 사격장 전용 �
         Collider collider = mark.GetComponent<Collider>(); // 자동 생성된 표시 충돌체
         collider.enabled = false; // 삭제 대기 중에도 탄도 간섭 차단
         Destroy(collider); // 장식 충돌체 제거
-        mark.transform.SetParent(transform, false); // 해당 표적에만 연결
+        TrainingReactiveTarget reactive = GetComponent<TrainingReactiveTarget>(); // 접이식 표적 여부
+        mark.transform.SetParent(reactive != null ? reactive.MarkParent : transform, false); // 해당 표적에만 연결
         mark.transform.SetPositionAndRotation(point + normal * 0.016f, Quaternion.LookRotation(normal)); // 표면 바로 앞 실제 충돌 위치
         mark.transform.localScale = new Vector3(0.07f, 0.07f, 0.014f); // 멀리서 읽을 수 있는 작은 흔적
         Renderer renderer = mark.GetComponent<Renderer>(); // 탄착 표시 렌더러

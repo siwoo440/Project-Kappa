@@ -18,12 +18,23 @@ public sealed class FirearmDefinition : ScriptableObject // 총기 고정 설정
     [SerializeField, Min(0.01f)] private float aimDuration = 0.18f; // 완전 조준까지 걸리는 시간
     [SerializeField, Range(0.1f, 1.2f)] private float movementMultiplier = 1f; // 기본 이동 대비 장착 속도
     [SerializeField, Min(0f)] private float headDamage; // 영점이면 기존 몸통 피해 사용
+    [SerializeField, Range(1, 16)] private int pelletCount = 1; // 한 발에서 검사할 탄환 수
+    [SerializeField] private bool singleRoundReload; // 한 발씩 보충하는 재장전
+    [SerializeField, Min(0f)] private float cycleDuration; // 펌프 또는 볼트 준비 시간
+    [SerializeField] private bool boltAction; // 볼트와 펌프 표시 구분
+    [SerializeField] private bool scopeEnabled; // 저격 전용 조준 표시
+    [SerializeField, Range(0.1f, 1f)] private float scopeFovRatio = 0.3f; // 저격용 시야각 배율
+    public int PelletCount => Mathf.Clamp(pelletCount, 1, 16); // 기존 총기는 한 발 유지
+    public bool SingleRoundReload => singleRoundReload; // 장전 방식 조회
+    public float CycleDuration => Mathf.Max(0f, cycleDuration); // 다음 사격 준비 시간
+    public bool BoltAction => boltAction; // 볼트 동작 여부
+    public bool ScopeEnabled => scopeEnabled; // 저격 표시 여부
     public FirearmFireMode FireMode => fireMode; // 방아쇠 방식 조회
     public float EquipDuration => Mathf.Max(0f, equipDuration); // 총기별 장착 지연 조회
     public float AimDuration => Mathf.Max(0.01f, aimDuration); // 조준 전환 시간 조회
     public float MovementMultiplier => Mathf.Clamp(movementMultiplier, 0.1f, 1.2f); // 이동 보정 조회
     public float HeadDamage => headDamage > 0f ? headDamage : stats != null ? stats.HealthDamage : 0f; // 기존 권총 부위 피해 호환
-    public string FireModeLabel => fireMode == FirearmFireMode.Automatic ? "자동" : "반자동"; // HUD 발사 방식 이름
+    public string FireModeLabel => cycleDuration > 0f ? (boltAction ? "볼트" : "펌프") : fireMode == FirearmFireMode.Automatic ? "자동" : "반자동"; // HUD 발사 방식 이름
 
     public FirearmHandlingProfile Handling => handling; // 공통 사격 감각 설정 조회
     public WeaponData Stats => stats; // 공통 수치 조회
@@ -31,7 +42,7 @@ public sealed class FirearmDefinition : ScriptableObject // 총기 고정 설정
     public string DisplayName => stats != null ? stats.DisplayName : "검증용 권총"; // 표시 이름 조회
     public float ReloadDuration => Mathf.Max(0.05f, reloadDuration); // 재장전 시간 조회
     public float MaximumRange => Mathf.Max(1f, maximumRange); // 최대 사거리 조회
-    public float AimFovRatio => Mathf.Clamp(aimFovRatio, 0.5f, 1f); // 조준 배율 조회
+    public float AimFovRatio => scopeEnabled ? Mathf.Clamp(scopeFovRatio, 0.1f, 1f) : Mathf.Clamp(aimFovRatio, 0.5f, 1f); // 조준 배율 조회
     public Material TracerMaterial => tracerMaterial; // 궤적 재질 조회
     public bool IsValid => stats != null && stats.Category != WeaponCategory.Melee && stats.MagazineSize > 0 && modelPrefab != null; // 발사 가능한 정의 검사
 

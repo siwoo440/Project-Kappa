@@ -225,6 +225,26 @@
                     "interactions": "",
                     "initialStateCheck": false,
                     "priority": 0
+                },
+                {
+                    "name": "Equip8",
+                    "type": "Button",
+                    "id": "57084f31-ccce-45c2-9cf8-4f47f0d91925",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "Equip9",
+                    "type": "Button",
+                    "id": "3e3dc187-c2a7-4fda-9a90-f23cdf607b9d",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
                 }
             ],
             "bindings": [
@@ -786,6 +806,28 @@
                     "processors": "",
                     "groups": "Keyboard&Mouse",
                     "action": "Equip7",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "a6775570-1448-4e5f-9457-a98bdbdee036",
+                    "path": "<Keyboard>/8",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Equip8",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "a44485b5-35fd-490b-b4d8-45f41021e1f3",
+                    "path": "<Keyboard>/9",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Equip9",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

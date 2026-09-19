@@ -215,10 +215,22 @@ public sealed class PlayerCombatController : MonoBehaviour // 플레이어 기�
     {
         Vector3 center = EquipmentTargeting.BodyCenter(transform) + transform.forward * attackReach; // 공격 중심 위치 계산
         Collider[] hits = Physics.OverlapSphere(center, attackRadius, targetMask, QueryTriggerInteraction.Collide); // 공격 범위 충돌 조회
+        HashSet<TrainingReactiveTarget> damagedTargets = new HashSet<TrainingReactiveTarget>(); // 표적의 여러 충돌체 중복 방지
         HashSet<EnemyActor> damagedEnemies = new HashSet<EnemyActor>(); // 중복 피해 방지 집합 생성
 
         for (int i = 0; i < hits.Length; i++) // 충돌 대상 순회
         {
+            TrainingReactiveTarget target = hits[i].GetComponentInParent<TrainingReactiveTarget>(); // 검으로 칠 수 있는 훈련 표적
+            if (target != null) // 실전 적과 표적 구분
+            {
+                Vector3 toTarget = hits[i].bounds.center - EquipmentTargeting.BodyCenter(transform); // 실제 표적 방향
+                if (target.AcceptsHit && !damagedTargets.Contains(target) && Vector3.Dot(transform.forward, toTarget.normalized) >= -0.1f && EquipmentTargeting.HasClearPath(EquipmentTargeting.BodyCenter(transform), hits[i].bounds.center, transform, target.transform)) // 전방과 엄폐와 중복 피해 검사
+                {
+                    damagedTargets.Add(target); // 이번 공격에 처리한 표적 기록
+                    target.ReceiveImpact(healthDamage, toTarget); // 피격 시 뒤로 넘어짐
+                }
+                continue; // 표적을 실전 적으로 중복 처리하지 않음
+            }
             EnemyActor enemy = hits[i].GetComponentInParent<EnemyActor>(); // 적 생명 관리자 조회
 
             if (enemy == null || enemy.IsDead || damagedEnemies.Contains(enemy)) // 피해 대상 확인

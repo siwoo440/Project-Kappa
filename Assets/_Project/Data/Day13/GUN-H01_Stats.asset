@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 282ca39d70087514cad0883f70e7667c, type: 3}
+  m_Name: GUN-H01_Stats
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  id: GUN-H01
+  displayName: "\uBB38\uC9C0\uAE30"
+  category: 4
+  healthDamage: 72
+  postureDamage: 55
+  effectiveRange: 10
+  falloffEndRange: 22
+  noiseRadius: 48
+  armorPenetration: 0.12
+  magazineSize: 6
+  reserveAmmo: 30
+  fireInterval: 0.8

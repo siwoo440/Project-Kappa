@@ -66,6 +66,18 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
     private float noticeUntil; // 빈 탄창 안내 반복 제한
 
     public bool IsEquipped => currentDefinition != null && currentView != null; // 실제 총기 장착 여부
+    public bool IsCycling => IsEquipped && currentState != null && currentState.IsCycling(Time.timeAsDouble); // 펌프와 볼트 준비 상태
+    public float CycleProgress => currentState != null ? currentState.CycleProgress(Time.timeAsDouble) : 1f; // 기구 동작 표시 비율
+    public int LastPelletHits // 마지막 발사의 적중 펠릿 수
+    {
+        get; // 현재 값 조회
+        private set; // 내부 상태 갱신
+    }
+    public float LastPracticeTime // 마지막 표적 제압 시간
+    {
+        get; // 현재 값 조회
+        private set; // 내부 상태 갱신
+    } = -1f;
     public bool IsReloading => IsEquipped && currentState != null && currentState.IsReloading; // 현재 총기 재장전 상태
     public bool IsAiming // 총기 조준 상태
     {
@@ -136,6 +148,7 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
             handlingStates.Add(definition, currentHandling); // 교체 시 상태 유지
         }
 
+        currentState.ConfigureMechanism(definition.SingleRoundReload, definition.CycleDuration); // 기존 탄약을 유지한 기구 설정
         currentHandling.Tick(Time.time, definition.Handling); // 비장착 동안의 회복 반영
         currentDefinition = definition; // 선택 총기 저장
         SelectedIndex = index; // 총기 슬롯 번호 저장
@@ -220,7 +233,18 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
 
         if (currentState.TickReload(Time.time)) // 재장전 완료 처리
         {
-            equipment.Notify("재장전 완료"); // 탄약 이동 완료 안내
+            equipment.Notify(currentState.IsReloading ? "탄약 한 발 보충" : "재장전 완료"); // 탄약 이동 완료 안내
+        }
+
+        if (IsReloading && currentDefinition.SingleRoundReload && (Pressed("Attack") || Pressed("Reload"))) // 삽입식 장전 중 취소 입력
+        {
+            currentState.CancelReload(); // 완료한 탄약은 남기고 다음 삽입만 취소
+            pendingShotCount = 0; // 취소와 발사가 같은 순간 겹치지 않도록 제한
+            triggerState.Reset(); // 연사 예약 정리
+            waitForAttackRelease = held; // 취소 후 새 클릭부터 사격
+            currentView.ShowReload(0f, false); // 삽입 모형 원복
+            equipment.Notify("삽입 중단 - 넣은 탄약 유지"); // 완료된 보충 안내
+            return; // 이번 프레임 발사 없음
         }
 
         if (Pressed("Reload")) // T 재장전 입력 확인
@@ -229,9 +253,9 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
         }
 
         InputAction aim = map.FindAction("Defense", false); // 무기별로 분기할 기존 RMB 입력
-        IsAiming = !IsReloading && aim != null && aim.enabled && aim.IsPressed(); // 총 장착 중 RMB는 조준만 처리
+        IsAiming = !IsReloading && !IsCycling && aim != null && aim.enabled && aim.IsPressed(); // 총 장착 중 RMB는 조준만 처리
         aimProgress = Mathf.MoveTowards(aimProgress, IsAiming ? 1f : 0f, Time.deltaTime / currentDefinition.AimDuration); // 실제 무기 조준 시간 적용
-        if (!IsReloading && !waitForAttackRelease) // 재장전과 중단 입력의 자동 발사 차단
+        if (!IsReloading && !IsCycling && !waitForAttackRelease) // 재장전과 중단 입력의 자동 발사 차단
         {
             pendingShotCount = triggerState.Collect(Time.timeAsDouble, Pressed("Attack"), held, currentDefinition.FireMode, currentDefinition.Stats.FireInterval, currentState.NextShotTime, scheduledShots); // 반자동과 자동을 같은 피해 함수로 예약
         }
@@ -309,6 +333,8 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
     {
         practiceShots = 0; // 발사 수 초기화
         practiceHits = 0; // 표적 적중 수 초기화
+        LastPracticeTime = -1f; // 제압 기록 초기화
+        LastPelletHits = 0; // 펠릿 기록 초기화
     }
 
     private void UpdateSpread() // 현재 사격 상태와 분산 계산
@@ -338,7 +364,7 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
 
     public bool TryReload() // 현재 총기 재장전 시도
     {
-        if (!IsEquipped || !CanOperate() || currentState == null || IsEquipping) // 총기와 장착 상태 검사
+        if (!IsEquipped || !CanOperate() || currentState == null || IsEquipping || IsCycling) // 총기와 장착 상태 검사
         {
             return false; // 잘못된 재장전 차단
         }
@@ -382,58 +408,29 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
             return false; // 실패 시 탄약과 피해 없음
         }
 
-        UpdateSpread(); // 외부 호출도 현재 자세 분산 사용
-        Vector2 offset = aimCamera != null ? FirearmHandlingMath.ViewportSample(UnityEngine.Random.insideUnitCircle, currentSpread, aimCamera.fieldOfView, aimCamera.pixelWidth, aimCamera.pixelHeight) : Vector2.zero; // HUD 안에서 고르게 선택한 조준 표본
-        Vector3 muzzle = currentView.Muzzle.position; // 반동 전 실제 총구 위치
-        bool hitSomething = FirearmTargeting.CastShot(aimCamera, transform, muzzle, currentDefinition.MaximumRange, hitMask, offset, out RaycastHit hit, out Vector3 end, out bool blocked); // 같은 분산과 기존 벽 검사로 첫 명중 계산
-        currentView.ShowShot(IsSuppressed ? Handling.SuppressedAudioRatio : 1f); // 외형 반동과 실제 효과음 크기 적용
-        practiceShots++; // 성공한 발사만 훈련 발사 수에 포함
-        LastHitWasHead = false; // 이전 머리 명중 색상을 새 발사에 남기지 않음
-        LastHealthDamage = 0f; // 이번 발사 피해 초기화
-        shotPoseUntil = Time.time + 0.18f; // 짧은 발사 자세 유지
-        NoiseSystem.Emit(EquipmentTargeting.BodyCenter(transform), EffectiveNoiseRadius, NoiseType.Gunshot, gameObject); // 기존 경비 청각에 총성 전달
-        if (currentDefinition.TracerMaterial != null) // 궤적 재질 확인
+        UpdateSpread(); // 실제 사격 상태의 분산 확정
+        Vector3 muzzle = currentView.Muzzle.position; // 반동 이전 사격 원점
+        TrainingShotResult result = TrainingShotResolver.Resolve(aimCamera, transform, muzzle, currentDefinition, hitMask, currentSpread, IsSuppressed); // 단발과 여덟 펠릿 공통 판정
+        bool blocked = result.Blocked; // 기존 총구 막힘 안내 연결
+        currentView.ShowShot(IsSuppressed ? Handling.SuppressedAudioRatio : 1f); // 한 발에 한 번만 발사 효과
+        practiceShots++; // 펠릿 수가 아닌 사용한 탄약 수
+        if (result.HitPractice) // 실제 훈련 표적에 적중한 발사 확인
         {
-            Vector3 start = blocked ? EquipmentTargeting.BodyCenter(transform) : muzzle; // 벽 내부에서 나오는 궤적 방지
-            EquipmentTransientEffect.ShowLine(start, end, currentDefinition.TracerMaterial, new Color(1f, 0.65f, 0.15f), 0.075f); // 짧은 사격 궤적
+            practiceHits++; // 여러 표적에 맞아도 한 번만 증가
         }
-
-        if (hitSomething && !blocked && hit.collider != null) // 총구 가림 없는 첫 명중 확인
+        LastPelletHits = result.PelletsHit; // 마지막 산탄 적중 수 표시
+        LastHitWasHead = result.Head; // 기존 머리 명중 표시 유지
+        LastHealthDamage = result.HealthDamage; // 이번 발사의 합산 피해
+        if (result.TrialSeconds >= 0f) // 표적 제압 완료 확인
         {
-            FirearmHitZone zone = hit.collider.GetComponent<FirearmHitZone>(); // 실제 피격 부위 검색
-            EnemyActor enemy = zone != null ? zone.Actor : hit.collider.GetComponentInParent<EnemyActor>(); // 부위가 없는 기존 적은 몸통 처리
-            FirearmDamageProbe probe = zone != null ? zone.Probe : null; // 별도 훈련 표적 확인
-            if ((enemy != null && !enemy.IsDead) || probe != null) // 유효한 적 또는 비교 표적 확인
-            {
-                bool head = zone != null && zone.Region == FirearmHitRegion.Head; // 머리 판정 여부
-                EnemyFirearmHitboxes boxes = enemy != null ? enemy.GetComponent<EnemyFirearmHitboxes>() : null; // 적 방어율 조회
-                float armor = probe != null ? probe.ArmorReduction : boxes != null ? boxes.ArmorReduction : 0f; // 미설정 적은 방어율 영점 유지
-                float multiplier = currentDefinition.DamageMultiplier(Vector3.Distance(muzzle, hit.point)); // 실제 총구부터 명중점까지 거리 감쇠
-                float damage = head ? currentDefinition.HeadDamage : currentDefinition.Stats.HealthDamage; // 부위별 기획 피해 선택
-                float healthDamage = FirearmDamageMath.Resolve(damage, multiplier, armor, currentDefinition.Stats.ArmorPenetration); // 방어 관통은 적 방어율에만 적용
-                float postureDamage = currentDefinition.Stats.PostureDamage * multiplier; // 자세 피해는 기존 거리 보정 유지
-                enemy?.TakeDamage(healthDamage, postureDamage, gameObject); // 적에게 한 발 피해 적용
-                probe?.Record(head ? FirearmHitRegion.Head : FirearmHitRegion.Body, healthDamage, postureDamage); // 훈련 장치에 같은 계산 기록
-                if (probe != null) // 비교 표적 명중률 기록
-                {
-                    practiceHits++; // 이번 탄환의 표적 적중 한 번 추가
-                }
-                LastHitWasHead = head; // HUD 피격 부위 저장
-                LastHealthDamage = healthDamage; // 실제 감소 피해 저장
-                hitMarkerUntil = Time.time + 0.16f; // 기존 명중 표식 사용
-            }
+            LastPracticeTime = result.TrialSeconds; // 첫 발사부터 제압까지 기록
         }
-
-        if (hitSomething && !blocked && hit.collider != null) // 장애물을 통과하지 않은 실제 탄착 확인
+        if (result.HitAnything) // 살아 있는 적 또는 훈련 표적 확인
         {
-            FirearmPracticeTarget practice = hit.collider.GetComponentInParent<FirearmPracticeTarget>(); // 사격장 표적 검색
-            if (practice != null) // 훈련 표적 명중 확인
-            {
-                practice.RegisterHit(hit.point, hit.normal, IsSuppressed); // 실제 명중 위치에 탄착 표시
-                practiceHits++; // 표적 적중 기록
-                hitMarkerUntil = Time.time + 0.16f; // 기존 명중 피드백 재사용
-            }
+            hitMarkerUntil = Time.time + 0.16f; // 기존 명중 피드백 재사용
         }
+        shotPoseUntil = Time.time + 0.18f; // 발사 자세 유지
+        NoiseSystem.Emit(EquipmentTargeting.BodyCenter(transform), EffectiveNoiseRadius, NoiseType.Gunshot, gameObject); // 펠릿 수와 무관한 총성 한 번
 
         currentHandling?.RegisterShot(Time.time, Handling); // 빗나가거나 벽에 맞아도 실제 발사는 분산 누적
         ApplyShotRecoil(); // 탄약 소모 성공 후에만 반동 적용

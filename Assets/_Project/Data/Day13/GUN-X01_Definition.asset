@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdf7b830234e5ec38682fea256b4d8c0, type: 3}
+  m_Name: GUN-X01_Definition
+  m_EditorClassIdentifier: Assembly-CSharp::FirearmDefinition
+  stats: {fileID: 11400000, guid: e55c4393b7fb7eb44927f8dd35f8baa1, type: 2}
+  modelPrefab: {fileID: 5611059477485217328, guid: 666673308a7809c439ec04e0afa8cdd2, type: 3}
+  reloadDuration: 0.9
+  maximumRange: 150
+  minimumDamageRatio: 0.55
+  aimFovRatio: 0.8
+  tracerMaterial: {fileID: 2100000, guid: e4e87e94cb627ac4b9f4bb7f3620e57e, type: 2}
+  handling: {fileID: 11400000, guid: 7373e8c15c7626146bf521a727ec299d, type: 2}
+  fireMode: 0
+  equipDuration: 0.8
+  aimDuration: 0.42
+  movementMultiplier: 0.78
+  headDamage: 176
+  pelletCount: 1
+  singleRoundReload: 1
+  cycleDuration: 1.3333334
+  boltAction: 1
+  scopeEnabled: 1
+  scopeFovRatio: 0.26
