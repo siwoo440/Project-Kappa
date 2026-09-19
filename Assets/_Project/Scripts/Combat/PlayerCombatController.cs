@@ -1,4 +1,5 @@
 using System.Collections.Generic; // 중복 피격 방지 집합
+using ProjectK.Day21; // 시민·차량 공통 피해 연결
 using UnityEngine; // 유니티 기본 기능
 using UnityEngine.InputSystem; // 입력 시스템 기능
 
@@ -217,6 +218,7 @@ public sealed class PlayerCombatController : MonoBehaviour // 플레이어 기�
         Collider[] hits = Physics.OverlapSphere(center, attackRadius, targetMask, QueryTriggerInteraction.Collide); // 공격 범위 충돌 조회
         HashSet<TrainingReactiveTarget> damagedTargets = new HashSet<TrainingReactiveTarget>(); // 표적의 여러 충돌체 중복 방지
         HashSet<EnemyActor> damagedEnemies = new HashSet<EnemyActor>(); // 중복 피해 방지 집합 생성
+        HashSet<WorldDamageReceiver> damagedWorld = new HashSet<WorldDamageReceiver>(); // 시민·차량 중복 피해 방지 집합 생성
 
         for (int i = 0; i < hits.Length; i++) // 충돌 대상 순회
         {
@@ -230,6 +232,18 @@ public sealed class PlayerCombatController : MonoBehaviour // 플레이어 기�
                     target.ReceiveImpact(healthDamage, toTarget); // 피격 시 뒤로 넘어짐
                 }
                 continue; // 표적을 실전 적으로 중복 처리하지 않음
+            }
+            WorldDamageReceiver worldTarget = hits[i].GetComponentInParent<WorldDamageReceiver>(); // 시민·차량 공통 피해 대상 조회
+            if (worldTarget != null && worldTarget.AcceptsHit && !damagedWorld.Contains(worldTarget)) // 살아 있는 월드 대상과 중복 여부 확인
+            {
+                Vector3 worldDirection = worldTarget.transform.position - transform.position; // 대상 방향 계산
+                worldDirection.y = 0f; // 수직 성분 제거
+                if (worldDirection.sqrMagnitude > 0.0001f && Vector3.Dot(transform.forward, worldDirection.normalized) >= -0.10f && EquipmentTargeting.HasClearPath(EquipmentTargeting.BodyCenter(transform), hits[i].bounds.center, transform, worldTarget.transform)) // 전방과 엄폐 조건 확인
+                {
+                    damagedWorld.Add(worldTarget); // 이번 공격 처리 대상 기록
+                    worldTarget.ApplyDamage(healthDamage, gameObject, WorldDamageType.Melee); // 검 체력 피해 적용
+                }
+                continue; // 시민·차량을 적 체력 로직으로 중복 처리하지 않음
             }
             EnemyActor enemy = hits[i].GetComponentInParent<EnemyActor>(); // 적 생명 관리자 조회
 

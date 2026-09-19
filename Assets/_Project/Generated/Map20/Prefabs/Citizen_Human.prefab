@@ -282,6 +282,8 @@ GameObject:
   - component: {fileID: 8006504641836517028}
   - component: {fileID: 2117208712202982426}
   - component: {fileID: 4549123711887937807}
+  - component: {fileID: 4298069291235732338}
+  - component: {fileID: 1943999985422869349}
   m_Layer: 0
   m_Name: Citizen_Human
   m_TagString: Untagged
@@ -378,6 +380,34 @@ MonoBehaviour:
   walkSpeed: 2.1
   fleeSpeed: 4.8
   turnSpeed: 9
+--- !u!114 &4298069291235732338
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4677623556717619936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31b9d9b63c0c4ea5b2a08906e047da5b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectK.Day21.MapCitizenVitals
+  kind: 0
+  maxHealth: 60
+  armorReduction: 0
+  corpseSeconds: 12
+--- !u!114 &1943999985422869349
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4677623556717619936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c26099ca962a44fa830f6cf2d97cd3ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectK.Day21.WorldDamageReceiver
 --- !u!1 &5629776587441239999
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,4 +1,5 @@
 using System.Collections.Generic; // 한 발의 대상별 피해 집계
+using ProjectK.Day21; // 시민·차량 공통 피해와 경비 범죄 연결
 using UnityEngine; // 기존 총구와 명중 검사
 
 public struct TrainingShotResult // 한 발 단위 계측 결과
@@ -19,6 +20,7 @@ public static class TrainingShotResolver // 기존 탄도를 재사용하는 산
         public EnemyActor Enemy; // 실제 적
         public FirearmDamageProbe Probe; // 기존 비교 장치
         public TrainingReactiveTarget Reactive; // 넘어지는 훈련 표적
+        public WorldDamageReceiver World; // 시민·차량 공통 피해 대상
         public float Health; // 합산 체력 피해
         public float Posture; // 합산 자세 피해
         public bool Head; // 머리 명중 포함
@@ -65,11 +67,12 @@ public static class TrainingShotResolver // 기존 탄도를 재사용하는 산
             FirearmDamageProbe probe = zone != null ? zone.Probe : null; // 기존 방어율 비교 장치
             TrainingReactiveTarget reactive = hit.collider.GetComponentInParent<TrainingReactiveTarget>(); // 표적 회전축 위 피격 확인
             FirearmPracticeTarget practice = hit.collider.GetComponentInParent<FirearmPracticeTarget>(); // 기존 탄착 기록 확인
+            WorldDamageReceiver worldTarget = hit.collider.GetComponentInParent<WorldDamageReceiver>(); // 시민·차량 공통 피격 대상 확인
             if (reactive != null && !reactive.AcceptsHit) // 넘어진 표적 확인
             {
                 continue; // 내려간 표적은 적중 수에서 제외
             }
-            if ((enemy == null || enemy.IsDead) && probe == null && reactive == null && practice == null) // 벽과 바닥 명중 구분
+            if ((enemy == null || enemy.IsDead) && probe == null && reactive == null && practice == null && (worldTarget == null || !worldTarget.AcceptsHit)) // 벽과 바닥 명중 구분
             {
                 continue; // 환경에는 체력 피해를 생성하지 않음
             }
@@ -79,7 +82,7 @@ public static class TrainingShotResolver // 기존 탄도를 재사용하는 산
             bool head = zone != null && zone.Region == FirearmHitRegion.Head; // 실제 머리 부위 확인
             result.Head |= head; // 이번 발사의 머리 명중 기록
             practice?.RegisterHit(hit.point, hit.normal, suppressed); // 각각의 탄착 위치는 보존
-            Object key = enemy != null ? (Object)enemy : probe != null ? (Object)probe : reactive; // 실제 피해를 받을 공통 대상
+            Object key = enemy != null ? (Object)enemy : worldTarget != null ? (Object)worldTarget : probe != null ? (Object)probe : reactive; // 실제 피해를 받을 공통 대상
             if (key == null) // 단순 탄착판 확인
             {
                 continue; // 체력 없는 표적은 표시만 처리
@@ -90,11 +93,12 @@ public static class TrainingShotResolver // 기존 탄도를 재사용하는 산
                 impact.Enemy = enemy; // 실제 적 참조
                 impact.Probe = probe; // 기존 비교 표적 참조
                 impact.Reactive = reactive; // 넘어지는 표적 참조
+                impact.World = worldTarget; // 시민·차량 공통 피해 참조
                 impact.Direction = hit.point - muzzle; // 충격 이동 방향
                 impacts.Add(key, impact); // 대상별 합산 등록
             }
             EnemyFirearmHitboxes armorData = enemy != null ? enemy.GetComponent<EnemyFirearmHitboxes>() : null; // 실제 적 방어율 조회
-            float armor = probe != null ? probe.ArmorReduction : armorData != null ? armorData.ArmorReduction : 0f; // 미설정 방어율 영점
+            float armor = worldTarget != null ? worldTarget.ArmorReduction : probe != null ? probe.ArmorReduction : armorData != null ? armorData.ArmorReduction : 0f; // 시민·차량 포함 방어율 조회
             BalanceTargetTag trialTag = reactive != null ? reactive.GetComponent<BalanceTargetTag>() : null; // 임시 표적만 시험 방어율 조회
             if (trialTag != null && trialTag.isActiveAndEnabled) // 지정된 계측 표적 확인
             {
@@ -111,12 +115,17 @@ public static class TrainingShotResolver // 기존 탄도를 재사용하는 산
 
         foreach (Impact impact in impacts.Values) // 모든 경로 검사 이후에 피해 적용
         {
-            float measuredBefore = impact.Enemy != null ? impact.Enemy.CurrentHealth : impact.Reactive != null ? impact.Reactive.RemainingHealth : 0f; // 계측용 실제 체력 보존
+            float measuredBefore = impact.Enemy != null ? impact.Enemy.CurrentHealth : impact.World != null ? impact.World.CurrentHealth : impact.Reactive != null ? impact.Reactive.RemainingHealth : 0f; // 시민·차량 포함 계측용 실제 체력 보존
             if (impact.Enemy != null && !impact.Enemy.IsDead) // 살아 있는 적 확인
             {
                 float before = impact.Enemy.CurrentHealth; // 실제 체력 감소량 기준
                 impact.Enemy.TakeDamage(impact.Health, impact.Posture, owner.gameObject); // 한 대상의 한 발 피해 적용
                 result.HealthDamage += Mathf.Max(0f, before - impact.Enemy.CurrentHealth); // 과도한 사망 피해 제외
+                impact.Enemy.GetComponent<MapGuardCrimeTag>()?.ReportDamage(owner.gameObject, before, impact.Enemy.CurrentHealth); // 법 집행 경비 공격·처치 Heat 반영
+            }
+            else if (impact.World != null && impact.World.AcceptsHit) // 살아 있는 시민·차량 확인
+            {
+                result.HealthDamage += impact.World.ApplyDamage(impact.Health, owner.gameObject, WorldDamageType.Firearm); // 총기 피해를 공통 월드 대상에 적용
             }
             else // 비교 표적의 계산 결과 표시
             {
@@ -130,12 +139,12 @@ public static class TrainingShotResolver // 기존 탄도를 재사용하는 산
             if (report != null) // 관측 중인 발사만 세부 결과 구성
             {
                 BalanceImpactReport measured = new BalanceImpactReport(); // 이번 대상의 합산 결과
-                measured.Target = impact.Enemy != null ? (Component)impact.Enemy : impact.Reactive != null ? (Component)impact.Reactive : impact.Probe; // 같은 대상 식별
+                measured.Target = impact.Enemy != null ? (Component)impact.Enemy : impact.World != null ? (Component)impact.World : impact.Reactive != null ? (Component)impact.Reactive : impact.Probe; // 시민·차량 포함 같은 대상 식별
                 measured.Pellets = impact.Pellets; // 실제 적중 펠릿 수
                 measured.Heads = impact.Heads; // 실제 머리 펠릿 수
                 measured.Before = measuredBefore; // 피격 전 체력
-                measured.After = impact.Enemy != null ? impact.Enemy.CurrentHealth : impact.Reactive != null ? impact.Reactive.RemainingHealth : 0f; // 피격 후 체력
-                measured.AppliedDamage = impact.Enemy != null || impact.Reactive != null ? Mathf.Max(0f, measured.Before - measured.After) : impact.Health; // 실제 체력 감소와 단순 계산판 구분
+                measured.After = impact.Enemy != null ? impact.Enemy.CurrentHealth : impact.World != null ? impact.World.CurrentHealth : impact.Reactive != null ? impact.Reactive.RemainingHealth : 0f; // 시민·차량 포함 피격 후 체력
+                measured.AppliedDamage = impact.Enemy != null || impact.World != null || impact.Reactive != null ? Mathf.Max(0f, measured.Before - measured.After) : impact.Health; // 시민·차량 포함 실제 체력 감소와 단순 계산판 구분
                 measured.Killed = measured.Before > 0f && measured.After <= 0f; // 이번 발사로 제압된 대상만 판정
                 report.Impacts.Add(measured); // 대상별 결과 추가
             }

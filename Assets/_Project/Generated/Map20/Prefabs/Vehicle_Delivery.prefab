@@ -552,6 +552,8 @@ GameObject:
   - component: {fileID: 3419801371037619156}
   - component: {fileID: 2524595685606574935}
   - component: {fileID: 8178513198579682916}
+  - component: {fileID: 7056467568198526406}
+  - component: {fileID: 1262497762851972717}
   m_Layer: 0
   m_Name: Vehicle_Delivery
   m_TagString: Untagged
@@ -649,6 +651,35 @@ MonoBehaviour:
   acceleration: 5.5
   braking: 11
   turnSpeed: 8
+--- !u!114 &7056467568198526406
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4043979245946516459}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3c53095e565429ab8ca695bd14e0b2f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectK.Day21.MapVehicleVitals
+  kind: 1
+  maxHealth: 420
+  armorReduction: 0.08
+  explosionDelay: {x: 0.5, y: 1.5}
+  wreckSeconds: {x: 15, y: 25}
+--- !u!114 &1262497762851972717
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4043979245946516459}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c26099ca962a44fa830f6cf2d97cd3ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectK.Day21.WorldDamageReceiver
 --- !u!1 &4428982030038732787
 GameObject:
   m_ObjectHideFlags: 0
