@@ -16,6 +16,9 @@ public sealed class PlayerAssassination : MonoBehaviour // 플레이어 암살 �
     [Header("Prompt")] // 안내 UI 설정 구분
     [SerializeField] private bool showPrompt = true; // 암살 안내 표시 여부
 
+    private PlayerEquipmentManager equipment; // 장비 행동 참조
+    private PlayerHealth health; // 생존 상태 참조
+    private PlayerDefenseController defense; // 방어 상태 참조
     private PlayerMovement movement; // 이동 관리자 참조
     private PlayerDirectionIndicator directionIndicator; // 방향 표시 참조
     private PlayerCombatController combatController; // 전투 관리자 참조
@@ -27,6 +30,9 @@ public sealed class PlayerAssassination : MonoBehaviour // 플레이어 암살 �
 
     private void Awake() // 초기 참조 설정
     {
+        equipment = GetComponent<PlayerEquipmentManager>(); // 장비 관리자 연결
+        health = GetComponent<PlayerHealth>(); // 생존 상태 연결
+        defense = GetComponent<PlayerDefenseController>(); // 방어 상태 연결
         movement = GetComponent<PlayerMovement>(); // 이동 관리자 조회
         directionIndicator = GetComponent<PlayerDirectionIndicator>(); // 방향 표시 조회
         combatController = GetComponent<PlayerCombatController>(); // 전투 관리자 조회
@@ -46,11 +52,16 @@ public sealed class PlayerAssassination : MonoBehaviour // 플레이어 암살 �
             return; // 대상 탐색 중단
         }
 
-        currentTarget = FindBestTarget(); // 가장 적합한 암살 대상 검색
+        currentTarget = ActionBlocked() ? null : FindBestTarget(); // 사용 가능한 상태에서만 암살 표시
     }
 
     public bool TryAssassinate() // 암살 시도
     {
+        if (ActionBlocked()) // 장비와 생존 상태 확인
+        {
+            return false; // 다른 행동 중 암살 금지
+        }
+
         if (isAssassinating) // 암살 진행 상태 확인
         {
             return false; // 암살 실패 반환
@@ -65,6 +76,11 @@ public sealed class PlayerAssassination : MonoBehaviour // 플레이어 암살 �
 
         StartCoroutine(AssassinationRoutine(target)); // 암살 코루틴 시작
         return true; // 암살 입력 소비 반환
+    }
+
+    private bool ActionBlocked() // 암살과 장비 충돌 검사
+    {
+        return (equipment != null && equipment.IsBusy) || (health != null && (health.IsDead || health.IsPostureBroken)) || (defense != null && defense.IsDefending) || (combatController != null && (combatController.IsAttacking || combatController.IsLocked)); // 행동 잠금 통합
     }
 
     private EnemyActor FindBestTarget() // 최적 암살 대상 검색
@@ -99,6 +115,11 @@ public sealed class PlayerAssassination : MonoBehaviour // 플레이어 암살 �
             if (sensor != null && sensor.enabled && sensor.State == DetectionState.Detected) // 완전 탐지 상태 확인
             {
                 continue; // 발견된 적 암살 제외
+            }
+
+            if (!EquipmentTargeting.HasClearPath(EquipmentTargeting.BodyCenter(transform), candidateCollider.bounds.center, transform, enemy.transform)) // 벽 너머 암살 방지
+            {
+                continue; // 차단된 대상 제외
             }
 
             float distance = Vector3.Distance(transform.position, enemy.transform.position); // 대상 거리 계산
@@ -165,7 +186,7 @@ public sealed class PlayerAssassination : MonoBehaviour // 플레이어 암살 �
 
         if (movement != null) // 이동 관리자 확인
         {
-            movement.SetMovementEnabled(true); // 이동 활성화
+            movement.SetMovementEnabled(health == null || (!health.IsDead && !health.IsPostureBroken)); // 생존 상태에서만 이동 복구
         }
 
         if (directionIndicator != null) // 방향 표시 확인

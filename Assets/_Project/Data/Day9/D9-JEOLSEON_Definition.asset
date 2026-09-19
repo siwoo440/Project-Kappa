@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b37d959a97f05587b740c7921858787a, type: 3}
+  m_Name: D9-JEOLSEON_Definition
+  m_EditorClassIdentifier: Assembly-CSharp::MeleeWeaponDefinition
+  stats: {fileID: 11400000, guid: f2769cb3f264f5148a417e009b2639da, type: 2}
+  modelPrefab: {fileID: 5009357131846311380, guid: 54b67b9f3155ce94fae32373d135ae49, type: 3}
+  hitTime: 0.16
+  animationDuration: 0.42
+  hitRadius: 0.8

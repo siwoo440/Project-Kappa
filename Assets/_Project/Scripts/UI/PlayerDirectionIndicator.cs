@@ -28,6 +28,11 @@ public sealed class PlayerDirectionIndicator : MonoBehaviour // 플레이어 방
     [SerializeField] private Color arrowColor = new Color(0.25f, 0.96f, 1f, 0.78f); // 화살표 색상
 
     private CharacterController controller; // 캐릭터 컨트롤러 참조
+    private PlayerEquipmentManager equipment; // 장비 행동 참조
+    private PlayerHealth health; // 생존 상태 참조
+    private PlayerDefenseController defense; // 방어 상태 참조
+    private PlayerAssassination assassination; // 암살 상태 참조
+    private PlayerCombatController combat; // 공격 상태 참조
     private PlayerMovement movement; // 플레이어 이동 참조
     private Transform visualRoot; // 시각화 루트
     private MeshRenderer ringRenderer; // 링 렌더러
@@ -45,6 +50,11 @@ public sealed class PlayerDirectionIndicator : MonoBehaviour // 플레이어 방
     private void Awake() // 초기화 처리
     {
         controller = GetComponent<CharacterController>(); // 캐릭터 컨트롤러 조회
+        equipment = GetComponent<PlayerEquipmentManager>(); // 장비 행동 연결
+        health = GetComponent<PlayerHealth>(); // 생존 상태 연결
+        defense = GetComponent<PlayerDefenseController>(); // 방어 상태 연결
+        assassination = GetComponent<PlayerAssassination>(); // 암살 상태 연결
+        combat = GetComponent<PlayerCombatController>(); // 공격 상태 연결
         movement = GetComponent<PlayerMovement>(); // 플레이어 이동 조회
         previousPosition = transform.position; // 초기 위치 저장
         EnsureVisuals(); // 시각 요소 생성
@@ -69,8 +79,9 @@ public sealed class PlayerDirectionIndicator : MonoBehaviour // 플레이어 방
         float horizontalSpeed = GetHorizontalSpeed(); // 실제 수평 이동 속도 계산
         bool moving = horizontalSpeed > movementThreshold; // 이동 상태 계산
         bool groundedAllowed = !requireGrounded || controller == null || controller.isGrounded; // 지상 표시 조건 계산
-        bool movementAllowed = movement == null || movement.MovementEnabled || horizontalSpeed > movementThreshold; // 이동 시스템 조건 계산
-        bool shouldShow = moving && groundedAllowed && movementAllowed && !suppressed; // 최종 표시 조건 계산
+        bool movementAllowed = movement == null || movement.MovementEnabled; // 이동 시스템 조건 계산
+        bool actionBusy = (equipment != null && equipment.IsBusy) || (health != null && (health.IsDead || health.IsPostureBroken)) || (defense != null && defense.IsDefending) || (assassination != null && assassination.IsAssassinating) || (combat != null && combat.IsAttacking); // 특수 행동 표시 제한
+        bool shouldShow = moving && groundedAllowed && movementAllowed && !suppressed && !actionBusy; // 최종 표시 조건 계산
         float targetVisibility = shouldShow ? 1f : 0f; // 목표 표시 비율 계산
         visibility = Mathf.MoveTowards(visibility, targetVisibility, fadeSpeed * Time.deltaTime); // 표시 비율 보간
         UpdateGroundPose(); // 바닥 위치와 방향 갱신
@@ -285,7 +296,18 @@ public sealed class PlayerDirectionIndicator : MonoBehaviour // 플레이어 방
         vertices[2] = new Vector3(0f, 0f, tipDistance); // 전방 끝 정점 저장
         vertices[3] = new Vector3(halfWidth, 0f, baseDistance + (tipDistance - baseDistance) * 0.34f); // 우측 외곽 정점 저장
         vertices[4] = new Vector3(halfWidth * 0.45f, 0f, baseDistance); // 우측 안쪽 정점 저장
-        int[] triangles = new int[] { 0, 1, 2, 0, 2, 4, 4, 2, 3 }; // 화살표 삼각형 배열 생성
+        int[] triangles = new int[] // 화살표 삼각형 배열 생성
+        {
+            0, // 1번 설정값
+            1, // 2번 설정값
+            2, // 3번 설정값
+            0, // 4번 설정값
+            2, // 5번 설정값
+            4, // 6번 설정값
+            4, // 7번 설정값
+            2, // 8번 설정값
+            3 // 9번 설정값
+        };
 
         Mesh mesh = new Mesh(); // 화살표 메쉬 생성
         mesh.name = "PlayerDirectionArrow"; // 화살표 메쉬 이름 지정

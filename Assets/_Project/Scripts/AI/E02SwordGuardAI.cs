@@ -17,9 +17,10 @@ public sealed class E02SwordGuardAI : MonoBehaviour // E-02 검술 호위병 AI
 
     private CharacterController controller; // 캐릭터 컨트롤러 참조
     private DetectionSensor sensor; // 탐지 센서 참조
+    private EnemyStatusController status; // 마비 상태 참조
     private EnemyActor actor; // 적 생명 관리자 참조
     private EnemyMeleeCombat melee; // 근접 전투 참조
-    private Transform target; // 플레이어 대상 참조
+    [SerializeField] private Transform target; // 플레이어 대상 참조
     private PlayerHealth targetHealth; // 플레이어 체력 참조
     private float verticalVelocity; // 수직 속도
 
@@ -28,17 +29,22 @@ public sealed class E02SwordGuardAI : MonoBehaviour // E-02 검술 호위병 AI
         controller = GetComponent<CharacterController>(); // 캐릭터 컨트롤러 조회
         sensor = GetComponent<DetectionSensor>(); // 탐지 센서 조회
         actor = GetComponent<EnemyActor>(); // 적 생명 관리자 조회
+        status = GetComponent<EnemyStatusController>(); // 마비 상태 연결
         melee = GetComponent<EnemyMeleeCombat>(); // 적 근접 전투 조회
     }
 
     private void Update() // 매 프레임 행동 처리
     {
+        status = status != null ? status : GetComponent<EnemyStatusController>(); // 마비 참조 재확인
+        target = target != null ? target : sensor != null ? sensor.Target : null; // 저장된 센서 대상 재사용
+        targetHealth = target != null ? target.GetComponent<PlayerHealth>() : null; // 재실행 후 플레이어 체력 연결
+
         if (actor == null || actor.IsDead) // 사망 상태 확인
         {
             return; // 행동 중단
         }
 
-        if (actor.IsPostureBroken) // 자세 붕괴 확인
+        if (actor.IsPostureBroken || (status != null && status.IsStunned)) // 자세 붕괴 확인
         {
             if (melee != null && melee.IsBusy) // 공격 진행 확인
             {
@@ -49,14 +55,14 @@ public sealed class E02SwordGuardAI : MonoBehaviour // E-02 검술 호위병 AI
             return; // 행동 중단
         }
 
-        if (target == null || targetHealth == null) // 플레이어 대상 확인
+        if (target == null || targetHealth == null || targetHealth.IsDead) // 플레이어 대상 확인
         {
             ApplyGravity(); // 중력 처리
             return; // 행동 중단
         }
 
         float distance = PlanarDistance(transform.position, target.position); // 플레이어 거리 계산
-        bool detected = sensor != null && sensor.State == DetectionState.Detected; // 완전 탐지 상태 계산
+        bool detected = sensor != null && sensor.State == DetectionState.Detected && sensor.TargetVisible; // 완전 탐지 상태 계산
         bool suspicious = sensor != null && sensor.HasLastKnownPosition && sensor.State != DetectionState.Idle; // 의심 상태 계산
 
         if (detected) // 전투 상태 확인

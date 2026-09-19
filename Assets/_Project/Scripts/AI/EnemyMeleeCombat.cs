@@ -17,8 +17,9 @@ public sealed class EnemyMeleeCombat : MonoBehaviour // 적 근접 검술 관리
     [SerializeField] private float strongRecovery = 0.78f; // 강 공격 후딜
     [SerializeField] private float hitRange = 2.45f; // 실제 타격 거리
 
+    private EnemyStatusController status; // 적 마비 상태
     private EnemyActor actor; // 적 생명 관리자 참조
-    private Transform weaponSocket; // 적 무기 회전 기준
+    [SerializeField] private Transform weaponSocket; // 적 무기 회전 기준
     private PlayerHealth targetHealth; // 공격 대상 체력
     private PlayerDefenseController targetDefense; // 공격 대상 방어
     private Quaternion weaponBaseRotation; // 무기 기본 회전
@@ -39,17 +40,25 @@ public sealed class EnemyMeleeCombat : MonoBehaviour // 적 근접 검술 관리
 
     private void Awake() // 초기 참조 설정
     {
-        actor = GetComponent<EnemyActor>(); // 적 생명 관리자 조회
+        actor = GetComponent<EnemyActor>(); // 적 생명 관리자 연결
+        status = GetComponent<EnemyStatusController>(); // 마비 상태 연결
+        if (weaponSocket == null) // 이전 씬의 저장 누락 확인
+        {
+            weaponSocket = transform.Find("Model/SwordSocket"); // 기존 검 소켓 재연결
+        }
+
+        weaponBaseRotation = weaponSocket != null ? weaponSocket.localRotation : Quaternion.identity; // 재실행 후 검 회전 복원
     }
 
     private void Update() // 매 프레임 공격 처리
     {
+        status = status != null ? status : GetComponent<EnemyStatusController>(); // 추가된 상태 관리자 확인
         if (!busy) // 공격 진행 여부 확인
         {
             return; // 처리 중단
         }
 
-        if (actor == null || actor.IsDead || actor.IsPostureBroken) // 공격 중단 상태 확인
+        if (actor == null || actor.IsDead || actor.IsPostureBroken || (status != null && status.IsStunned)) // 공격 중단 상태 확인
         {
             CancelAttack(); // 공격 취소
             return; // 처리 중단
@@ -70,6 +79,12 @@ public sealed class EnemyMeleeCombat : MonoBehaviour // 적 근접 검술 관리
         }
     }
 
+    public void BindWeaponSocket(Transform socket) // 저장 누락된 검 소켓 복원
+    {
+        weaponSocket = socket; // 모형 회전 기준 저장
+        weaponBaseRotation = socket != null ? socket.localRotation : Quaternion.identity; // 검 기본 회전 저장
+    }
+
     public void Configure(Transform socket, float newBasicDamage, float newStrongDamage) // 외부 공격 설정
     {
         weaponSocket = socket; // 무기 소켓 저장
@@ -80,7 +95,7 @@ public sealed class EnemyMeleeCombat : MonoBehaviour // 적 근접 검술 관리
 
     public bool TryStartAttack(PlayerHealth target) // 공격 시작 시도
     {
-        if (busy || target == null || actor == null || actor.IsDead || actor.IsPostureBroken) // 공격 가능 조건 확인
+        if (busy || target == null || target.IsDead || actor == null || actor.IsDead || actor.IsPostureBroken || (status != null && status.IsStunned)) // 공격 가능 조건 확인
         {
             return false; // 공격 실패 반환
         }
@@ -132,6 +147,11 @@ public sealed class EnemyMeleeCombat : MonoBehaviour // 적 근접 검술 관리
         if (direction.sqrMagnitude > 0.0001f && Vector3.Dot(transform.forward, direction.normalized) < 0.15f) // 전방 판정 확인
         {
             return; // 전방 밖 대상 제외
+        }
+
+        if (!EquipmentTargeting.HasClearPath(transform.position + Vector3.up * 1.2f, EquipmentTargeting.BodyCenter(targetHealth.transform), transform, targetHealth.transform)) // 벽 너머 근접 피해 방지
+        {
+            return; // 차단된 공격 무효
         }
 
         if (targetDefense != null) // 방어 관리자 확인

@@ -15,6 +15,7 @@ public sealed class PlayerDefenseController : MonoBehaviour // 플레이어 방�
     [Header("Feedback")] // 피드백 설정 구분
     [SerializeField] private float parryMessageDuration = 0.55f; // 받아치기 메시지 시간
 
+    private PlayerEquipmentManager equipment; // 장비 행동 상태
     private PlayerInput playerInput; // 플레이어 입력 참조
     private InputAction defenseAction; // 방어 입력 액션
     private PlayerHealth health; // 플레이어 체력 참조
@@ -34,6 +35,7 @@ public sealed class PlayerDefenseController : MonoBehaviour // 플레이어 방�
         health = GetComponent<PlayerHealth>(); // 플레이어 체력 조회
         combat = GetComponent<PlayerCombatController>(); // 플레이어 공격 조회
         directionIndicator = GetComponent<PlayerDirectionIndicator>(); // 방향 표시 조회
+        equipment = GetComponent<PlayerEquipmentManager>(); // 장비 관리자 연결
         ResolveDefenseAction(); // 방어 액션 연결
     }
 
@@ -49,7 +51,7 @@ public sealed class PlayerDefenseController : MonoBehaviour // 플레이어 방�
             parryMessageTimer -= Time.deltaTime; // 메시지 시간 감소
         }
 
-        if (externalLock || health == null || health.IsDead || health.IsPostureBroken) // 방어 불가 상태 확인
+        if (externalLock || health == null || health.IsDead || health.IsPostureBroken || (combat != null && combat.IsLocked) || (equipment != null && equipment.IsBusy)) // 방어 불가 상태 확인
         {
             EndDefense(); // 방어 종료
             return; // 처리 중단
@@ -108,6 +110,11 @@ public sealed class PlayerDefenseController : MonoBehaviour // 플레이어 방�
         {
             EndDefense(); // 방어 즉시 종료
         }
+    }
+
+    private void OnDisable() // 비활성 방어 정리
+    {
+        EndDefense(); // 방향 표시와 방어 상태 복구
     }
 
     private void BeginDefense() // 방어 시작

@@ -50,6 +50,7 @@ public sealed class PlayerParkour : MonoBehaviour // 파쿠르 동작 관리자
     [SerializeField] private float ledgeClimbForwardOffset = 0.7f; // 난간 올라가기 전방 보정
     [SerializeField] private float ledgeClimbUpOffset = 1.2f; // 난간 올라가기 상방 보정
 
+    private PlayerEquipmentManager equipment; // 장비 사용 상태
     private PlayerMovement movement; // 기본 이동 참조
     private MovementEnergy energy; // 이동 에너지 참조
     private CharacterController controller; // 캐릭터 컨트롤러 참조
@@ -69,6 +70,7 @@ public sealed class PlayerParkour : MonoBehaviour // 파쿠르 동작 관리자
 
     private void Awake() // 초기 참조 설정
     {
+        equipment = GetComponent<PlayerEquipmentManager>(); // 장비 관리자 연결
         movement = GetComponent<PlayerMovement>(); // 이동 스크립트 조회
         energy = GetComponent<MovementEnergy>(); // 에너지 스크립트 조회
         controller = GetComponent<CharacterController>(); // 캐릭터 컨트롤러 조회
@@ -134,9 +136,9 @@ public sealed class PlayerParkour : MonoBehaviour // 파쿠르 동작 관리자
             cameraController.SetAdditionalRoll(0f); // 카메라 기울기 원복
         }
 
-        if (movement != null && !movement.MovementEnabled) // 기본 이동 활성 확인
+        if ((movement != null && !movement.MovementEnabled) || (equipment != null && equipment.IsBusy)) // 외부 이동 잠금과 장비 사용 확인
         {
-            movement.SetMovementEnabled(true); // 이동 활성화
+            return; // 암살 잠금 해제와 장비 사용 중 파쿠르 진입 방지
         }
 
         energy.SetAutoRecoveryEnabled(true); // 자동 회복 활성화

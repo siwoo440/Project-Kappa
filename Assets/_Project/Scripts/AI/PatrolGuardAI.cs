@@ -22,9 +22,10 @@ public sealed class PatrolGuardAI : MonoBehaviour // E-01 순찰 경비 행동 �
 
     private CharacterController controller; // 캐릭터 컨트롤러 참조
     private DetectionSensor sensor; // 탐지 센서 참조
+    private EnemyStatusController status; // 적 마비 상태
     private EnemyActor actor; // 적 생명 관리자 참조
-    private Transform target; // 플레이어 대상 참조
-    private Transform[] patrolPoints; // 순찰 지점 배열
+    [SerializeField] private Transform target; // 플레이어 대상 참조
+    [SerializeField] private Transform[] patrolPoints; // 순찰 지점 배열
     private GuardState state; // 현재 경비 상태
     private int patrolIndex; // 현재 순찰 지점 번호
     private float waitTimer; // 순찰 대기 시간
@@ -35,12 +36,14 @@ public sealed class PatrolGuardAI : MonoBehaviour // E-01 순찰 경비 행동 �
     {
         controller = GetComponent<CharacterController>(); // 캐릭터 컨트롤러 조회
         sensor = GetComponent<DetectionSensor>(); // 탐지 센서 조회
+        status = GetComponent<EnemyStatusController>(); // 마비 상태 연결
         actor = GetComponent<EnemyActor>(); // 적 생명 관리자 조회
     }
 
     private void Update() // 매 프레임 행동 처리
     {
-        if (actor != null && (actor.IsDead || actor.IsPostureBroken)) // 행동 정지 상태 확인
+        status = status != null ? status : GetComponent<EnemyStatusController>(); // 추가된 상태 관리자 확인
+        if ((status != null && status.IsStunned) || (actor != null && (actor.IsDead || actor.IsPostureBroken))) // 행동 정지 상태 확인
         {
             ApplyGravity(); // 중력 처리 유지
             return; // 행동 처리 중단
@@ -65,6 +68,15 @@ public sealed class PatrolGuardAI : MonoBehaviour // E-01 순찰 경비 행동 �
         }
 
         ApplyGravity(); // 중력 처리
+    }
+
+    public void BindTargetAndRoute(Transform playerTarget, Transform[] points) // 저장 대상과 순찰 경로 보정
+    {
+        target = playerTarget; // 플레이어 대상 저장
+        if (points != null && points.Length > 0) // 유효한 경로 확인
+        {
+            patrolPoints = points; // 기존 순찰 지점 재연결
+        }
     }
 
     public void Configure(Transform playerTarget, Transform[] points, float newPatrolSpeed, float newChaseSpeed) // 경비 설정 적용

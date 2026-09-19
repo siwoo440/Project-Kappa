@@ -76,6 +76,13 @@ public sealed class PlayerHealth : MonoBehaviour // 플레이어 체력 자세 �
         currentPosture = Mathf.MoveTowards(currentPosture, maxPosture, postureRegenPerSecond * Time.deltaTime); // 자세 자연 회복
     }
 
+    public float Heal(float amount) // 회복 주입기 체력 회복
+    {
+        float restored = EquipmentRules.ClampedHeal(currentHealth, maxHealth, amount, dead); // 실제 회복 가능량 계산
+        currentHealth += restored; // 최대 체력 이내 회복 적용
+        return restored; // 소모 여부 판단용 실제 회복량
+    }
+
     public void TakeDamage(float healthDamage, float postureDamage, GameObject attacker) // 피해 적용
     {
         if (dead || postureBroken) // 피해 가능 상태 확인

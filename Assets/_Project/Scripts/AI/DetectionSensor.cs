@@ -22,6 +22,10 @@ public sealed class DetectionSensor : MonoBehaviour // 시야 청각 탐지 센�
     [Header("Search")] // 수색 설정 구분
     [SerializeField] private float searchDuration = 4f; // 수색 유지 시간
 
+    [SerializeField] private Transform visionSource; // 회전 카메라의 실제 렌즈 기준
+    private EnemyStatusController status; // 마비 상태 참조
+    private Transform SightSource => visionSource != null ? visionSource : transform; // 시야 기준 선택
+    public Transform Target => target; // AI 대상 복원용 참조
     private DetectionState state; // 현재 탐지 상태
     private float detectionProgress; // 현재 탐지 진행도
     private float suspicionTimer; // 의심 유지 시간
@@ -48,6 +52,13 @@ public sealed class DetectionSensor : MonoBehaviour // 시야 청각 탐지 센�
 
     private void Update() // 매 프레임 탐지 처리
     {
+        status = status != null ? status : GetComponent<EnemyStatusController>(); // 마비 상태 연결
+        if (status != null && status.IsStunned) // 마비 중 감지 중단
+        {
+            targetVisible = false; // 현재 시야만 해제
+            return; // 탐지 상태와 마지막 위치 유지
+        }
+
         if (target == null) // 탐지 대상 확인
         {
             targetVisible = false; // 시야 상태 초기화
@@ -89,9 +100,15 @@ public sealed class DetectionSensor : MonoBehaviour // 시야 청각 탐지 센�
         visionMask = mask; // 시야 마스크 저장
     }
 
+    public void ConfigureVisionSource(Transform source, Vector3 offset) // 회전 렌즈 시야 연결
+    {
+        visionSource = source; // 실제 렌즈 회전 기준 저장
+        visionOriginOffset = offset; // 렌즈 원점 위치 저장
+    }
+
     private bool IsTargetVisible() // 대상 시야 확인
     {
-        Vector3 origin = transform.TransformPoint(visionOriginOffset) + transform.forward * 0.05f; // 시야 원점 계산
+        Vector3 origin = SightSource.TransformPoint(visionOriginOffset) + SightSource.forward * 0.05f; // 시야 원점 계산
         Vector3 targetPosition = target.position + targetOffset; // 대상 확인 위치 계산
         Vector3 toTarget = targetPosition - origin; // 대상 방향 계산
         float distance = toTarget.magnitude; // 대상 거리 계산
@@ -102,28 +119,28 @@ public sealed class DetectionSensor : MonoBehaviour // 시야 청각 탐지 센�
         }
 
         Vector3 direction = toTarget / distance; // 대상 방향 정규화
-        float angle = Vector3.Angle(transform.forward, direction); // 대상 각도 계산
+        float angle = Vector3.Angle(SightSource.forward, direction); // 대상 각도 계산
         if (angle > visionAngle * 0.5f) // 시야 각도 확인
         {
             return false; // 시야 실패 반환
         }
 
-        if (!Physics.Raycast(origin, direction, out RaycastHit hit, distance + 0.2f, visionMask, QueryTriggerInteraction.Ignore)) // 시야 레이 충돌 확인
+        if (SmokeZone.BlocksSight(origin, targetPosition)) // 시야 구간의 연막 교차 확인
         {
-            return true; // 장애물 없음 반환
+            return false; // 연막 내부와 뒤쪽 대상 감지 차단
         }
 
-        Transform hitTransform = hit.transform; // 충돌 트랜스폼 조회
-        if (hitTransform == target || hitTransform.IsChildOf(target)) // 대상 직접 충돌 확인
-        {
-            return true; // 시야 성공 반환
-        }
-
-        return false; // 장애물 차단 반환
+        return EquipmentTargeting.HasClearPath(origin, targetPosition, transform, target, visionMask); // 자기 몸을 제외한 엄폐물 검사
     }
 
     private void HandleNoise(NoiseEvent noiseEvent) // 소음 이벤트 처리
     {
+        status = status != null ? status : GetComponent<EnemyStatusController>(); // 마비 상태 연결
+        if ((status != null && status.IsStunned) || (targetVisible && state == DetectionState.Detected)) // 마비와 직접 시야 확보 확인
+        {
+            return; // 마비 중 청각 반응과 추격 중 소음 덮어쓰기 방지
+        }
+
         float distance = Vector3.Distance(transform.position, noiseEvent.Position); // 소음 거리 계산
         float audibleDistance = Mathf.Min(hearingRadius, noiseEvent.Radius); // 실제 청취 거리 계산
         if (distance > audibleDistance) // 청취 범위 확인
@@ -189,14 +206,14 @@ public sealed class DetectionSensor : MonoBehaviour // 시야 청각 탐지 센�
 
     private void OnDrawGizmosSelected() // 선택 시 탐지 범위 표시
     {
-        Vector3 origin = transform.TransformPoint(visionOriginOffset); // 시야 원점 계산
+        Vector3 origin = SightSource.TransformPoint(visionOriginOffset); // 시야 원점 계산
         Gizmos.DrawWireSphere(transform.position, hearingRadius); // 청각 범위 표시
-        Gizmos.DrawLine(origin, origin + transform.forward * visionDistance); // 시야 중심선 표시
+        Gizmos.DrawLine(origin, origin + SightSource.forward * visionDistance); // 시야 중심선 표시
 
         Quaternion leftRotation = Quaternion.AngleAxis(-visionAngle * 0.5f, Vector3.up); // 좌측 시야 회전 계산
         Quaternion rightRotation = Quaternion.AngleAxis(visionAngle * 0.5f, Vector3.up); // 우측 시야 회전 계산
-        Gizmos.DrawLine(origin, origin + leftRotation * transform.forward * visionDistance); // 좌측 시야 경계 표시
-        Gizmos.DrawLine(origin, origin + rightRotation * transform.forward * visionDistance); // 우측 시야 경계 표시
+        Gizmos.DrawLine(origin, origin + leftRotation * SightSource.forward * visionDistance); // 좌측 시야 경계 표시
+        Gizmos.DrawLine(origin, origin + rightRotation * SightSource.forward * visionDistance); // 우측 시야 경계 표시
 
         if (hasLastKnownPosition) // 마지막 위치 존재 확인
         {

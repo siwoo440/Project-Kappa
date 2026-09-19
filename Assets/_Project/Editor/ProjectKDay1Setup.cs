@@ -14,11 +14,16 @@ public static class ProjectKDay1Setup // 1일차 자동 구성 도구
         "Assets/_Project/Scenes/MainMenu.unity", // 메인 메뉴 씬 경로
         "Assets/_Project/Scenes/Hub.unity", // 거점 씬 경로
         "Assets/_Project/Scenes/Test.unity" // 테스트 씬 경로
-    }; // 기본 씬 경로 목록 종료
+    };
 
     [InitializeOnLoadMethod] // 에디터 로드 자동 실행
     private static void ScheduleAutoSetup() // 자동 구성 예약
     {
+        if (System.IO.File.Exists("Assets/_Project/Editor/ProjectKDay9Setup.cs")) // 새 일차 구성 여부 확인
+        {
+            return; // 기존 테스트 씬과 장비 배치 보존
+        }
+
         EditorApplication.delayCall += AutoSetup; // 컴파일 종료 후 실행 예약
     }
 

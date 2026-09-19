@@ -12,6 +12,11 @@ public static class ProjectKDay5DetectionUISetup // 탐지 UI 자동 구성 도�
     [InitializeOnLoadMethod] // 에디터 로드 자동 실행
     private static void ScheduleAutoSetup() // 자동 구성 예약
     {
+        if (System.IO.File.Exists("Assets/_Project/Editor/ProjectKDay9Setup.cs")) // 9일차 이후 자동 재생성 방지
+        {
+            return; // 기존 테스트 씬과 장비 배치 보존
+        }
+
         if (SessionState.GetBool(SessionKey, false)) // 세션 적용 여부 확인
         {
             return; // 중복 적용 방지
@@ -78,4 +83,4 @@ public static class ProjectKDay5DetectionUISetup // 탐지 UI 자동 구성 도�
         return Camera.main; // 대체 메인 카메라 반환
     }
 }
-#endif
+#endif // 에디터 전용 기능 종료

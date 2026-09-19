@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0404f7a416655c56a9c22a7d40ed24fc, type: 3}
+  m_Name: EquipmentTuning
+  m_EditorClassIdentifier: Assembly-CSharp::EquipmentTuning
+  dartRange: 20
+  stunDuration: 3
+  dartCooldown: 1.2
+  maxDarts: 6
+  dartNoiseRadius: 2
+  dartModel: {fileID: 6466838622545240799, guid: d9b718b27df893e4c9a40cae42bfa1bc, type: 3}
+  healingAmount: 40
+  maxConsumables: 3
+  useDuration: 0.45
+  throwSpeed: 8
+  throwLift: 3
+  lureRadius: 12
+  lureDuration: 6
+  smokeRadius: 4
+  smokeDuration: 5
+  injectorModel: {fileID: 4277329159175032436, guid: b40b3ca8396713944b070e675371ac5e, type: 3}
+  lureModel: {fileID: 91799772382166032, guid: 7556e0a1f6990564bb20f949422a74ca, type: 3}
+  smokeModel: {fileID: 7740377974917297738, guid: 5a5c2d9697d09e942a23a0dcb238d429, type: 3}
+  effectMaterial: {fileID: 2100000, guid: e4e87e94cb627ac4b9f4bb7f3620e57e, type: 2}
+  smokeMaterial: {fileID: 2100000, guid: bba868aa361a19c409c853f7978ad15d, type: 2}

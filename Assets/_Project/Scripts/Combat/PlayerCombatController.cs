@@ -22,6 +22,10 @@ public sealed class PlayerCombatController : MonoBehaviour // 플레이어 기�
     [Header("Debug UI")] // 테스트 UI 설정 구분
     [SerializeField] private bool showCombatHint = true; // 전투 안내 표시 여부
 
+    [SerializeField] private MeleeWeaponDefinition weaponDefinition; // 장착 근접 무기 데이터
+    private PlayerEquipmentManager equipment; // 장비 행동 상태
+    private PlayerHealth health; // 생존 상태
+    private PlayerAssassination assassination; // 암살 상태
     private PlayerInput playerInput; // 플레이어 입력 참조
     private InputAction attackAction; // 공격 입력 액션
     private PlayerDirectionIndicator directionIndicator; // 방향 표시 참조
@@ -41,6 +45,9 @@ public sealed class PlayerCombatController : MonoBehaviour // 플레이어 기�
         playerInput = GetComponent<PlayerInput>(); // 플레이어 입력 조회
         directionIndicator = GetComponent<PlayerDirectionIndicator>(); // 방향 표시 조회
         defenseController = GetComponent<PlayerDefenseController>(); // 방어 관리자 조회
+        equipment = GetComponent<PlayerEquipmentManager>(); // 장비 관리자 연결
+        health = GetComponent<PlayerHealth>(); // 생존 상태 연결
+        assassination = GetComponent<PlayerAssassination>(); // 암살 상태 연결
         ResolveAttackAction(); // 공격 액션 연결
 
         if (weaponSocket != null) // 무기 소켓 확인
@@ -56,6 +63,17 @@ public sealed class PlayerCombatController : MonoBehaviour // 플레이어 기�
 
     private void Update() // 매 프레임 전투 처리
     {
+        bool blocked = (health != null && (health.IsDead || health.IsPostureBroken)) || (assassination != null && assassination.IsAssassinating) || (equipment != null && equipment.IsBusy); // 생존과 장비 행동 잠금 확인
+        if (blocked) // 공격 중단 조건 확인
+        {
+            if (isAttacking) // 진행 중 공격 확인
+            {
+                EndAttack(); // 공격 취소와 검 위치 복구
+            }
+
+            return; // 새 공격 입력 금지
+        }
+
         if (isAttacking) // 공격 진행 상태 확인
         {
             UpdateAttack(); // 공격 동작 갱신
@@ -80,6 +98,31 @@ public sealed class PlayerCombatController : MonoBehaviour // 플레이어 기�
         if (attackAction.WasPressedThisFrame()) // 공격 입력 확인
         {
             BeginAttack(); // 기본 공격 시작
+        }
+    }
+
+    public void ApplyDefinition(MeleeWeaponDefinition definition) // 현재 무기 데이터 적용
+    {
+        if (isAttacking || definition == null || definition.Stats == null) // 진행 중 공격과 비어 있는 설정 보호
+        {
+            return; // 공격 도중 수치 교체 방지
+        }
+
+        weaponDefinition = definition; // 장착 정의 저장
+        healthDamage = definition.Stats.HealthDamage; // 체력 피해 적용
+        postureDamage = definition.Stats.PostureDamage; // 자세 피해 적용
+        attackReach = Mathf.Max(0.1f, definition.Stats.EffectiveRange); // 무기 사거리 적용
+        attackRadius = definition.HitRadius; // 무기 타격 반경 적용
+        attackDuration = definition.AnimationDuration; // 휘두르기 시간 적용
+        hitTime = definition.HitTime; // 타격 시점 적용
+        attackCooldown = Mathf.Max(attackDuration, definition.Stats.FireInterval); // 공격 간격 적용
+    }
+
+    private void OnDisable() // 비활성 상태 정리
+    {
+        if (isAttacking) // 진행 중 공격 확인
+        {
+            EndAttack(); // 중단된 공격 표시 복구
         }
     }
 
@@ -113,6 +156,7 @@ public sealed class PlayerCombatController : MonoBehaviour // 플레이어 기�
 
     private void BeginAttack() // 기본 공격 시작
     {
+        ApplyDefinition(weaponDefinition); // 이번 공격에 사용할 무기 수치 확정
         isAttacking = true; // 공격 상태 저장
         attackTimer = 0f; // 공격 시간 초기화
         hitApplied = false; // 피해 적용 상태 초기화
@@ -124,7 +168,7 @@ public sealed class PlayerCombatController : MonoBehaviour // 플레이어 기�
             directionIndicator.SetSuppressed(true); // 방향 표시 숨김
         }
 
-        Debug.Log("절선 기본 공격"); // 공격 로그 출력
+        Debug.Log((weaponDefinition != null ? weaponDefinition.DisplayName : "절선") + " 기본 공격"); // 공격 로그 출력
     }
 
     private void UpdateAttack() // 공격 동작 갱신
@@ -169,7 +213,7 @@ public sealed class PlayerCombatController : MonoBehaviour // 플레이어 기�
 
     private void PerformHit() // 공격 피해 판정
     {
-        Vector3 center = transform.position + Vector3.up * 0.95f + transform.forward * attackReach; // 공격 중심 위치 계산
+        Vector3 center = EquipmentTargeting.BodyCenter(transform) + transform.forward * attackReach; // 공격 중심 위치 계산
         Collider[] hits = Physics.OverlapSphere(center, attackRadius, targetMask, QueryTriggerInteraction.Collide); // 공격 범위 충돌 조회
         HashSet<EnemyActor> damagedEnemies = new HashSet<EnemyActor>(); // 중복 피해 방지 집합 생성
 
@@ -193,6 +237,12 @@ public sealed class PlayerCombatController : MonoBehaviour // 플레이어 기�
                 {
                     continue; // 후방 대상 제외
                 }
+            }
+
+            Vector3 targetPoint = hits[i].bounds.center; // 대상 충돌체 중심 조회
+            if (!EquipmentTargeting.HasClearPath(EquipmentTargeting.BodyCenter(transform), targetPoint, transform, enemy.transform)) // 벽을 통과하는 검 공격 검사
+            {
+                continue; // 엄폐물 뒤의 적 제외
             }
 
             damagedEnemies.Add(enemy); // 피해 대상 저장
@@ -222,7 +272,7 @@ public sealed class PlayerCombatController : MonoBehaviour // 플레이어 기�
 
     private void OnGUI() // 전투 테스트 안내 표시
     {
-        if (!showCombatHint) // 안내 표시 여부 확인
+        if (!showCombatHint || equipment != null) // 새 장비 HUD의 중복 안내 방지
         {
             return; // UI 표시 중단
         }
@@ -238,7 +288,7 @@ public sealed class PlayerCombatController : MonoBehaviour // 플레이어 기�
     private void OnDrawGizmosSelected() // 공격 범위 에디터 표시
     {
         Gizmos.color = new Color(0.2f, 0.9f, 1f, 0.35f); // 기즈모 색상 지정
-        Vector3 center = transform.position + Vector3.up * 0.95f + transform.forward * attackReach; // 공격 중심 계산
+        Vector3 center = EquipmentTargeting.BodyCenter(transform) + transform.forward * attackReach; // 공격 중심 계산
         Gizmos.DrawWireSphere(center, attackRadius); // 공격 범위 표시
     }
 }

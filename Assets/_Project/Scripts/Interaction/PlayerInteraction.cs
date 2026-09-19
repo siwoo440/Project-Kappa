@@ -9,6 +9,8 @@ public sealed class PlayerInteraction : MonoBehaviour // 플레이어 상호작�
     [SerializeField] private float interactionRadius = 0.12f; // 상호작용 감지 반경
     [SerializeField] private LayerMask interactionMask = ~0; // 상호작용 감지 마스크
 
+    private PlayerEquipmentManager equipment; // 장비 행동 참조
+    private PlayerHealth health; // 생존 상태 참조
     private PlayerInput playerInput; // 플레이어 입력 참조
     private InputAction interactAction; // 상호작용 입력 액션
     private IInteractable currentInteractable; // 현재 상호작용 대상
@@ -20,6 +22,8 @@ public sealed class PlayerInteraction : MonoBehaviour // 플레이어 상호작�
 
     private void Awake() // 초기 참조 설정
     {
+        equipment = GetComponent<PlayerEquipmentManager>(); // 장비 행동 연결
+        health = GetComponent<PlayerHealth>(); // 생존 상태 연결
         playerInput = GetComponent<PlayerInput>(); // 플레이어 입력 조회
         assassination = GetComponent<PlayerAssassination>(); // 암살 관리자 조회
         interactionCamera = interactionCamera != null ? interactionCamera : Camera.main; // 상호작용 카메라 보정
@@ -33,6 +37,12 @@ public sealed class PlayerInteraction : MonoBehaviour // 플레이어 상호작�
 
     private void Update() // 매 프레임 상호작용 처리
     {
+        if ((equipment != null && equipment.IsBusy) || (health != null && (health.IsDead || health.IsPostureBroken)) || (assassination != null && assassination.IsAssassinating)) // 다른 행동 중 상호작용 차단
+        {
+            SetCurrentTarget(null); // 오래된 대상 표시 정리
+            return; // F 입력 처리 중단
+        }
+
         if (interactionCamera == null) // 카메라 참조 확인
         {
             interactionCamera = Camera.main; // 메인 카메라 재조회
@@ -98,7 +108,8 @@ public sealed class PlayerInteraction : MonoBehaviour // 플레이어 상호작�
             return; // 탐색 중단
         }
 
-        RaycastHit[] hits = Physics.SphereCastAll(interactionCamera.transform.position, interactionRadius, interactionCamera.transform.forward, interactionDistance, interactionMask, QueryTriggerInteraction.Collide); // 전방 상호작용 후보 조회
+        float cameraExtra = Vector3.Distance(interactionCamera.transform.position, EquipmentTargeting.BodyCenter(transform)); // 카메라 후방 거리 보정
+        RaycastHit[] hits = Physics.SphereCastAll(interactionCamera.transform.position, interactionRadius, interactionCamera.transform.forward, interactionDistance + cameraExtra, interactionMask, QueryTriggerInteraction.Collide); // 전방 상호작용 후보 조회
         IInteractable nearestInteractable = null; // 가장 가까운 대상 초기화
         float nearestDistance = float.MaxValue; // 가장 가까운 거리 초기화
 
@@ -116,6 +127,13 @@ public sealed class PlayerInteraction : MonoBehaviour // 플레이어 상호작�
             if (hitTransform == transform || hitTransform.IsChildOf(transform)) // 자기 자신 충돌 확인
             {
                 continue; // 자기 충돌 제외
+            }
+
+            Vector3 bodyCenter = EquipmentTargeting.BodyCenter(transform); // 플레이어 중심 조회
+            Vector3 closest = hitCollider.ClosestPoint(bodyCenter); // 대상의 가장 가까운 표면
+            if (Vector3.Distance(bodyCenter, closest) > interactionDistance || !EquipmentTargeting.HasClearPath(bodyCenter, closest, transform, hitTransform)) // 거리와 장애물 확인
+            {
+                continue; // 멀거나 가려진 상호작용 대상 제외
             }
 
             IInteractable interactable = FindInteractable(hitCollider); // 상호작용 컴포넌트 조회
