@@ -27,12 +27,10 @@ public sealed class FirearmRuntimeState // 총기 한 자루의 실행 중 탄�
         get; // 현재 값 조회
         private set; // 내부 상태 갱신
     }
-    public float NextShotAt // 다음 발사 가능 시각
-    {
-        get; // 현재 값 조회
-        private set; // 내부 상태 갱신
-    }
-    private readonly float fireInterval; // 한 발 사이의 최소 간격
+    private double nextShotAt; // 오래 실행해도 정밀한 다음 발사 시각
+    public float NextShotAt => (float)nextShotAt; // 기존 코드용 발사 시각 조회
+    public double NextShotTime => nextShotAt; // 자동 연사용 정밀 시각 조회
+    private readonly double fireInterval; // 한 발 사이의 최소 간격
     private float reloadStartedAt; // 재장전 시작 시각
     private float reloadEndsAt; // 재장전 완료 시각
 
@@ -43,18 +41,23 @@ public sealed class FirearmRuntimeState // 총기 한 자루의 실행 중 탄�
         Rounds = Capacity; // 최초 장탄수 지급
         Reserve = ReserveLimit; // 최초 예비탄 지급
         fireInterval = Math.Max(0.02f, interval); // 연사 간격 최소값 확보
-        NextShotAt = float.NegativeInfinity; // 시작 직후 발사 허용
+        nextShotAt = double.NegativeInfinity; // 시작 직후 발사 허용
     }
 
-    public bool TryFire(float now) // 한 발 발사와 탄수 소모
+    public bool TryFire(float now) // 이전 일차의 단발 호출 호환
     {
-        if (IsReloading || Rounds <= 0 || now < NextShotAt) // 재장전과 탄수와 발사 간격 검사
+        return TryFireScheduled(now); // 공통 탄약 차감으로 연결
+    }
+
+    public bool TryFireScheduled(double now) // 실제 예약 시각 기준 한 발 발사
+    {
+        if (double.IsNaN(now) || double.IsInfinity(now) || IsReloading || Rounds <= 0 || now + 0.000001 < nextShotAt) // 시간과 탄수와 발사 간격 검사
         {
             return false; // 실패 시 탄약 보존
         }
 
         Rounds--; // 실제 발사 한 발 소모
-        NextShotAt = now + fireInterval; // 다음 발사 시각 갱신
+        nextShotAt = now + fireInterval; // 다음 발사 시각 갱신
         return true; // 발사 성공 반환
     }
 
@@ -108,6 +111,6 @@ public sealed class FirearmRuntimeState // 총기 한 자루의 실행 중 탄�
         CancelReload(); // 보급 중 재장전 중복 차감 방지
         Rounds = Capacity; // 탄창 보충
         Reserve = ReserveLimit; // 예비탄 보충
-        NextShotAt = float.NegativeInfinity; // 보급 후 발사 대기 해제
+        nextShotAt = double.NegativeInfinity; // 보급 후 발사 대기 해제
     }
 }

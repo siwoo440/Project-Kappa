@@ -55,6 +55,11 @@ public sealed class PlayerEquipmentManager : MonoBehaviour // 근접 무기와 �
             InitializeEquipment(); // 참조가 늦게 준비된 경우 재시도
         }
 
+        if (!Application.isFocused || Cursor.lockState != CursorLockMode.Locked) // 편집기와 메뉴의 숫자 입력 차단
+        {
+            return; // 게임 창 밖 장비 사용 방지
+        }
+
         if (!ready || !CanSwitchWeapon()) // 재장전 취소용 교체 입력은 별도 허용
         {
             return; // 장비 입력 중단
@@ -191,7 +196,7 @@ public sealed class PlayerEquipmentManager : MonoBehaviour // 근접 무기와 �
             }
         }
 
-        BeginUse(switchDuration); // 장착 전환 대기
+        BeginUse(firearm.Definition.EquipDuration); // 총기별 장착 전환 대기
         Notify(firearm.Definition.DisplayName + " 장착"); // 총기 장착 안내
         return true; // 장착 완료
     }

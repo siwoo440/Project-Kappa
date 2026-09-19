@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdf7b830234e5ec38682fea256b4d8c0, type: 3}
+  m_Name: GUN-P01_Definition
+  m_EditorClassIdentifier: Assembly-CSharp::FirearmDefinition
+  stats: {fileID: 11400000, guid: b412be08c622d514a9f40c27f5ee3c87, type: 2}
+  modelPrefab: {fileID: 4911046196041254287, guid: 37d3d24fcc3fbe046a392accada75e1a, type: 3}
+  reloadDuration: 1.35
+  maximumRange: 42
+  minimumDamageRatio: 0.55
+  aimFovRatio: 0.8
+  tracerMaterial: {fileID: 2100000, guid: e4e87e94cb627ac4b9f4bb7f3620e57e, type: 2}
+  handling: {fileID: 11400000, guid: 430f39afee018a04eb5455b4d5f85b5e, type: 2}
+  fireMode: 0
+  equipDuration: 0.28
+  aimDuration: 0.18
+  movementMultiplier: 1
+  headDamage: 43

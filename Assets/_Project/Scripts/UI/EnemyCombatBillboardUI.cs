@@ -319,7 +319,7 @@ public sealed class EnemyCombatBillboardUI : MonoBehaviour // 적 머리 위 전
                 break; // 분기 종료
         }
 
-        detectionFill.fillAmount = progress; // 탐지 게이지 채움 적용
+        SetGaugeFill(detectionFill, progress); // 탐지 비율에 맞춘 실제 표시 폭
         detectionFill.color = color; // 탐지 게이지 색상 적용
     }
 
@@ -338,7 +338,7 @@ public sealed class EnemyCombatBillboardUI : MonoBehaviour // 적 머리 위 전
             return; // 갱신 중단
         }
 
-        attackFill.fillAmount = meleeCombat.AttackGaugeNormalized; // 공격 예고 채움 적용
+        SetGaugeFill(attackFill, meleeCombat.AttackGaugeNormalized); // 공격 예고의 실제 표시 폭
         attackFill.color = attackGaugeColor; // 공격 예고 색상 적용
     }
 
@@ -350,7 +350,7 @@ public sealed class EnemyCombatBillboardUI : MonoBehaviour // 적 머리 위 전
         }
 
         healthRow.SetActive(true); // 체력 행 표시
-        healthFill.fillAmount = actor.HealthNormalized; // 체력 채움 적용
+        SetGaugeFill(healthFill, actor.HealthNormalized); // 남은 체력에 맞춘 실제 표시 폭
         healthFill.color = healthGaugeColor; // 체력 색상 적용
     }
 
@@ -362,8 +362,29 @@ public sealed class EnemyCombatBillboardUI : MonoBehaviour // 적 머리 위 전
         }
 
         postureRow.SetActive(true); // 자세 행 표시
-        postureFill.fillAmount = actor.PostureNormalized; // 자세 채움 적용
+        SetGaugeFill(postureFill, actor.PostureNormalized); // 남은 자세에 맞춘 실제 표시 폭
         postureFill.color = actor.IsPostureBroken ? postureBrokenColor : postureGaugeColor; // 자세 색상 적용
+    }
+
+    private static void SetGaugeFill(Image fill, float normalized) // 이미지 원본에 의존하지 않는 가로 게이지
+    {
+        if (fill == null) // 채움 이미지 누락 확인
+        {
+            return; // 갱신 중단
+        }
+
+        float amount = float.IsNaN(normalized) || float.IsInfinity(normalized) ? 0f : Mathf.Clamp01(normalized); // 잘못된 값과 범위 초과 보정
+        fill.type = Image.Type.Simple; // 원본 이미지 없는 Filled 렌더링 의존 제거
+        fill.preserveAspect = false; // 체력 비율과 다른 가로세로 보정 방지
+        fill.raycastTarget = false; // 게이지의 상호작용 입력 가림 방지
+        fill.fillAmount = amount; // Inspector 수치와 표시 비율 동기화
+        RectTransform rect = fill.rectTransform; // 실제 채움 사각형 조회
+        rect.pivot = new Vector2(0f, 0.5f); // 왼쪽 기준 채움 고정
+        rect.anchorMin = Vector2.zero; // 배경 왼쪽 아래 기준
+        rect.anchorMax = new Vector2(amount, 1f); // 배경 너비에 대한 실제 채움 비율
+        rect.offsetMin = Vector2.zero; // 내부 최소 여백 제거
+        rect.offsetMax = Vector2.zero; // 내부 최대 여백 제거
+        fill.enabled = amount > 0f; // 영점 잔상 제거와 회복 후 재표시
     }
 
     private GameObject CreateGaugeRow(Transform parent, string name, string label, Vector2 anchoredPosition, Vector2 size, out Image fillImage) // 공통 게이지 행 생성
@@ -415,10 +436,7 @@ public sealed class EnemyCombatBillboardUI : MonoBehaviour // 적 머리 위 전
         fillRect.offsetMin = Vector2.zero; // 채움 최소 오프셋 적용
         fillRect.offsetMax = Vector2.zero; // 채움 최대 오프셋 적용
         fillImage = fillObject.AddComponent<Image>(); // 채움 이미지 추가
-        fillImage.type = Image.Type.Filled; // 채움 이미지 모드 적용
-        fillImage.fillMethod = Image.FillMethod.Horizontal; // 수평 채움 적용
-        fillImage.fillOrigin = 0; // 채움 시작점 적용
-        fillImage.fillAmount = 1f; // 채움 비율 초기화
+        SetGaugeFill(fillImage, 1f); // 별도 이미지 원본 없이 전체 폭 초기화
         fillImage.color = new Color(0.4f, 0.85f, 1f, 1f); // 채움 색상 초기화
         return row; // 생성된 행 반환
     }

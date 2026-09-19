@@ -47,7 +47,7 @@ public static class ProjectKDay11Validation // 정적 연결과 실제 계산 �
                 Check(definition.IsValid, "총기 기본 수치 또는 모형 누락", ref checks); // 원래 무기 정의 검사
                 Check(definition.Handling != null, "FirearmHandlingProfile 누락", ref checks); // 새로운 조정 자료 검사
                 FirearmView view = definition.ModelPrefab.GetComponent<FirearmView>(); // 모형의 실제 표시 참조
-                Check(view != null && view.Muzzle != null && view.HasSuppressor, "소음기 또는 총구 연결 누락", ref checks); // 두 총구 연결 검사
+                Check(view != null && view.Muzzle != null && (!definition.Handling.SupportsSuppressor || view.HasSuppressor), "소음기 또는 총구 연결 누락", ref checks); // 두 총구 연결 검사
                 Check(definition.Handling.AimSpread <= definition.Handling.HipSpread, "조준 분산이 비조준보다 큼", ref checks); // 기본 정확도 비교
             }
 

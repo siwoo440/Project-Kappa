@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 282ca39d70087514cad0883f70e7667c, type: 3}
+  m_Name: GUN-P01_Stats
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  id: GUN-P01
+  displayName: "\uC720\uB839\uC190"
+  category: 1
+  healthDamage: 24
+  postureDamage: 16
+  effectiveRange: 24
+  falloffEndRange: 42
+  noiseRadius: 8
+  armorPenetration: 0.05
+  magazineSize: 10
+  reserveAmmo: 60
+  fireInterval: 0.16666667

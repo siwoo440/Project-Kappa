@@ -31,6 +31,7 @@ public sealed class PlayerMovement : MonoBehaviour // 플레이어 이동 관리
 
     private CharacterController controller; // 캐릭터 컨트롤러 참조
     private PlayerInput playerInput; // 플레이어 입력 참조
+    private PlayerFirearmController firearm; // 총기 장착과 조준 이동 보정
     private Camera movementCamera; // 이동 기준 카메라
     private InputAction moveAction; // 이동 입력 액션
     private InputAction jumpAction; // 점프 입력 액션
@@ -64,6 +65,7 @@ public sealed class PlayerMovement : MonoBehaviour // 플레이어 이동 관리
     {
         controller = GetComponent<CharacterController>(); // 캐릭터 컨트롤러 조회
         playerInput = GetComponent<PlayerInput>(); // 플레이어 입력 조회
+        firearm = GetComponent<PlayerFirearmController>(); // 기존 총기 관리자 조회
         movementCamera = Camera.main; // 메인 카메라 조회
         standingCenter = controller.center; // 기본 중심 저장
         standingHeight = Mathf.Max(standingHeight, controller.radius * 2f); // 서기 높이 보정
@@ -205,6 +207,7 @@ public sealed class PlayerMovement : MonoBehaviour // 플레이어 이동 관리
 
         bool sprintHeld = sprintAction != null && sprintAction.IsPressed(); // 달리기 입력 확인
         float targetSpeed = isCrouching ? crouchSpeed : sprintHeld ? sprintSpeed : walkSpeed; // 현재 목표 속도 결정
+        targetSpeed *= firearm != null ? firearm.MovementSpeedMultiplier : 1f; // 기본 이동 수치를 보존한 총기 속도 보정
         Vector3 desiredVelocity = desiredDirection * targetSpeed; // 목표 수평 속도 계산
 
         float controlMultiplier = controller.isGrounded ? 1f : airControl; // 지상 공중 제어 비율 선택

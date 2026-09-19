@@ -73,7 +73,7 @@ public sealed class PlayerEquipmentHUD : MonoBehaviour // 근접 총기 보조�
 
         if (gun && firearm.State != null) // 총기 탄약 표시 조건
         {
-            string state = firearm.IsReloading ? "재장전 " + (firearm.ReloadProgress * 100f).ToString("0") + "%" : firearm.IsAiming ? "조준" : firearm.State.Rounds == 0 ? "T 재장전" : "단발"; // 현재 사격 상태
+            string state = firearm.IsEquipping ? "장착 중" : firearm.IsReloading ? "재장전 " + (firearm.ReloadProgress * 100f).ToString("0") + "%" : firearm.IsAiming ? "조준 " + (firearm.AimProgress * 100f).ToString("0") + "%" : firearm.State.Rounds == 0 ? "T 재장전" : firearm.Definition.FireModeLabel; // 현재 사격 상태
             GUI.Label(new Rect(x, y + 53f, width - 28f, 23f), "탄약 " + firearm.State.Rounds + "/" + firearm.State.Capacity + "   예비 " + firearm.State.Reserve + "   " + state, bodyStyle); // 장탄수와 예비탄 구분
             DrawReloadBar(new Rect(x, y + 81f, width - 28f, 7f), firearm.IsReloading ? firearm.ReloadProgress : 0f); // HP와 섞이지 않는 총기 재장전 표시
         }
@@ -84,13 +84,13 @@ public sealed class PlayerEquipmentHUD : MonoBehaviour // 근접 총기 보조�
 
         if (gun) // 총기별 실제 정확도와 소음기 안내
         {
-            GUI.Label(new Rect(x, y + 90f, width - 28f, 22f), "분산 ±" + firearm.SpreadDegrees.ToString("0.00") + "° / 소음기 " + (firearm.IsSuppressed ? "ON" : "OFF") + " [B]", bodyStyle); // 실제 사격 수치 표시
+            GUI.Label(new Rect(x, y + 90f, width - 28f, 22f), "분산 ±" + firearm.SpreadDegrees.ToString("0.00") + "° / " + (firearm.SupportsSuppressor ? "소음기 " + (firearm.IsSuppressed ? "ON [B]" : "OFF [B]") : "기본 총성 사용"), bodyStyle); // 실제 사격 수치 표시
             GUI.Label(new Rect(x, y + 113f, width - 28f, 22f), "표적 " + firearm.PracticeHits + "/" + firearm.PracticeShots + " (" + firearm.PracticeAccuracy.ToString("0") + "%) / 총성 " + firearm.EffectiveNoiseRadius.ToString("0.0") + "m", bodyStyle); // 사격장 적중률과 발사 반경 표시
         }
 
         GUI.Label(new Rect(x, y + 139f, width - 28f, 23f), "[R] 마비침  " + (support != null ? support.RemainingDarts + "/" + support.Capacity : "0"), bodyStyle); // 마비침 탄약 별도 유지
         GUI.Label(new Rect(x, y + 164f, width - 28f, 23f), consumables != null ? "[G] " + consumables.SelectedName + "  x" + consumables.SelectedCount : string.Empty, bodyStyle); // 소모품 수량 유지
-        GUI.Label(new Rect(x, y + 193f, width - 28f, 57f), "1~4 검 / 5 권총 / Q·E 이전·다음\n총: LMB 발사 / RMB 조준 / T 재장전\nV 아이템 선택 / F 상호작용·보급", bodyStyle); // 충돌 없는 장비 조작 안내
+        GUI.Label(new Rect(x, y + 193f, width - 28f, 57f), "1~4 검 / 5~7 총기 / Q·E 이전·다음\n총: LMB 발사 / RMB 조준 / T 재장전\nV 아이템 선택 / F 상호작용·보급", bodyStyle); // 충돌 없는 장비 조작 안내
         GUI.Label(new Rect(x, y + 255f, width - 28f, 39f), equipment.Message, bodyStyle); // 실패 원인과 장비 사용 결과
     }
 
@@ -112,7 +112,7 @@ public sealed class PlayerEquipmentHUD : MonoBehaviour // 근접 총기 보조�
         if (equipment.IsFirearmEquipped && firearm != null) // 총기 조준 표시
         {
             float gap = firearm.ReticleRadiusPixels * height / Mathf.Max(1f, Screen.height); // 실제 분산 픽셀과 HUD 축소율 일치
-            GUI.color = firearm.HasHitMarker ? new Color(1f, 0.55f, 0.16f) : Color.white; // 명중 시 주황색 표시
+            GUI.color = firearm.HasHitMarker ? (firearm.LastHitWasHead ? new Color(1f, 0.2f, 0.35f) : new Color(1f, 0.55f, 0.16f)) : Color.white; // 명중 시 주황색 표시
             GUI.DrawTexture(new Rect(x - gap - 7f, y - 1f, 7f, 2f), Texture2D.whiteTexture); // 왼쪽 조준선
             GUI.DrawTexture(new Rect(x + gap, y - 1f, 7f, 2f), Texture2D.whiteTexture); // 오른쪽 조준선
             GUI.DrawTexture(new Rect(x - 1f, y - gap - 7f, 2f, 7f), Texture2D.whiteTexture); // 위쪽 조준선

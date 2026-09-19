@@ -41,6 +41,26 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
     private float originalFov; // 장착 전 카메라 시야각
     private bool ownsFov; // 시야각 복구 책임 상태
     private bool pendingShot; // 카메라 갱신 후 처리할 발사
+    private readonly FirearmTriggerState triggerState = new FirearmTriggerState(); // 프레임 독립 발사 예약
+    private readonly double[] scheduledShots = new double[4]; // 긴 멈춤 뒤 한 프레임 최대 네 발
+    private int pendingShotCount; // 현재 유효 발사 예약 수
+    private bool waitForAttackRelease; // 행동 중단 뒤 버튼 해제 대기
+    private double equipReadyAt; // 무기별 장착 완료 시각
+    private float aimProgress; // 조준 전환 진행도
+    public float AimProgress => aimProgress; // 화면과 분산에 공통 적용할 조준 비율
+    public bool IsEquipping => IsEquipped && Time.timeAsDouble < equipReadyAt; // 장착 지연 상태
+    public bool SupportsSuppressor => Handling != null && Handling.SupportsSuppressor && currentView != null && currentView.HasSuppressor; // 실제 B 전환 지원 여부
+    public float MovementSpeedMultiplier => IsEquipped && isActiveAndEnabled ? currentDefinition.MovementMultiplier * Mathf.Lerp(1f, 0.82f, aimProgress) : 1f; // 장착 속도와 문서 조준 배율
+    public bool LastHitWasHead // 마지막 적 명중 부위 기록
+    {
+        get; // 현재 부위 조회
+        private set; // 명중 시에만 갱신
+    }
+    public float LastHealthDamage // 마지막 적 피해 기록
+    {
+        get; // 현재 피해 조회
+        private set; // 실제 피해만 저장
+    }
     private float shotPoseUntil; // 발사 자세 유지 시각
     private float hitMarkerUntil; // 명중 표시 종료 시각
     private float noticeUntil; // 빈 탄창 안내 반복 제한
@@ -119,6 +139,9 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
         currentHandling.Tick(Time.time, definition.Handling); // 비장착 동안의 회복 반영
         currentDefinition = definition; // 선택 총기 저장
         SelectedIndex = index; // 총기 슬롯 번호 저장
+        equipReadyAt = Time.timeAsDouble + definition.EquipDuration; // 무기별 사용 시작 시각
+        waitForAttackRelease = AttackIsHeld(); // 누른 채 교체한 입력의 자동 발사 방지
+        triggerState.Reset(); // 이전 총기의 예약 제거
         currentView = view; // 현재 모형 저장
         currentView.gameObject.SetActive(true); // 선택한 총기만 표시
         currentView.SetSuppressed(IsSuppressed); // 저장한 소음기 상태 복구
@@ -144,6 +167,10 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
     public void Interrupt() // 사망과 특수행동의 즉시 총기 중단
     {
         pendingShot = false; // 예약된 발사 취소
+        pendingShotCount = 0; // 이번 프레임 연사 예약 전부 취소
+        triggerState.Reset(); // 다음 프레임에 밀린 연사 방지
+        waitForAttackRelease = true; // 초점 복귀를 포함해 버튼 해제 후 새 입력만 허용
+        aimProgress = 0f; // 정지한 조준 진행도 복구
         IsAiming = false; // 조준 종료
         shotPoseUntil = 0f; // 발사 자세 종료
         if (currentState != null) // 총기 상태 확인
@@ -162,12 +189,13 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
     private void Update() // 입력과 재장전 상태 처리
     {
         pendingShot = false; // 이전 프레임 예약 제거
+        pendingShotCount = 0; // 이전 연사 예약 제거
         if (!IsEquipped) // 총기 장착 여부 확인
         {
             return; // 검 장착 중 총기 입력 금지
         }
 
-        if (!CanOperate()) // 실행과 행동 상태 확인
+        if (!CanOperate() || IsEquipping) // 실행과 행동과 장착 지연 확인
         {
             Interrupt(); // 잠금 중 발사와 재장전 중단
             return; // 입력 처리 중단
@@ -178,6 +206,16 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
         {
             TryToggleSuppressor(); // 탄수를 건드리지 않는 부착 전환
             return; // 같은 프레임 발사와 장착을 함께 처리하지 않음
+        }
+
+        bool held = AttackIsHeld(); // 장착 중인 총기의 방아쇠 유지 상태
+        if (IsReloading && held) // 장전 도중 시작한 누르기까지 확인
+        {
+            waitForAttackRelease = true; // 장전 완료 직후 의도하지 않은 연사 차단
+        }
+        if (!held) // 중단 이후 손을 뗀 입력 확인
+        {
+            waitForAttackRelease = false; // 다음 새 사격 허용
         }
 
         if (currentState.TickReload(Time.time)) // 재장전 완료 처리
@@ -192,19 +230,28 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
 
         InputAction aim = map.FindAction("Defense", false); // 무기별로 분기할 기존 RMB 입력
         IsAiming = !IsReloading && aim != null && aim.enabled && aim.IsPressed(); // 총 장착 중 RMB는 조준만 처리
-        pendingShot = !IsReloading && Pressed("Attack"); // 단발 입력만 예약
+        aimProgress = Mathf.MoveTowards(aimProgress, IsAiming ? 1f : 0f, Time.deltaTime / currentDefinition.AimDuration); // 실제 무기 조준 시간 적용
+        if (!IsReloading && !waitForAttackRelease) // 재장전과 중단 입력의 자동 발사 차단
+        {
+            pendingShotCount = triggerState.Collect(Time.timeAsDouble, Pressed("Attack"), held, currentDefinition.FireMode, currentDefinition.Stats.FireInterval, currentState.NextShotTime, scheduledShots); // 반자동과 자동을 같은 피해 함수로 예약
+        }
+        else // 재장전 중 예약 정리
+        {
+            triggerState.Reset(); // 대기 시간에 발사가 쌓이는 문제 차단
+        }
+        pendingShot = pendingShotCount > 0; // 기존 발사 자세와 연결
         if (aimRig != null) // 카메라 입력 감도 참조 확인
         {
-            aimRig.SetLookMultiplier(IsAiming && Handling != null ? Handling.AimSensitivityRatio : 1f); // 기본 감도는 보존한 조준 보정
+            aimRig.SetLookMultiplier(Handling != null ? Mathf.Lerp(1f, Handling.AimSensitivityRatio, aimProgress) : 1f); // 기본 감도는 보존한 조준 보정
         }
         currentView.ShowReload(ReloadProgress, IsReloading); // 재장전 탄창 모션 적용
     }
 
     private void LateUpdate() // 카메라 이동 후 실제 발사와 조준
     {
-        if (!IsEquipped || !CanOperate()) // 최종 발사 직전 상태 재검사
+        if (!IsEquipped || !CanOperate() || IsEquipping) // 최종 발사와 장착 상태 재검사
         {
-            pendingShot = false; // 무효 예약 제거
+            Interrupt(); // 마지막 시점의 행동 변경도 모든 예약과 조준 정리
             return; // 총구 처리 중단
         }
 
@@ -222,15 +269,24 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
         firearmSocket.rotation = Quaternion.LookRotation(forward, Vector3.up); // 총구를 실제 조준 방향에 정렬
         if (ownsFov && aimCamera != null) // 조준 카메라 설정 확인
         {
-            float targetFov = IsAiming ? originalFov * currentDefinition.AimFovRatio : originalFov; // 현재 목표 시야각
-            aimCamera.fieldOfView = Mathf.Lerp(aimCamera.fieldOfView, targetFov, 1f - Mathf.Exp(-14f * Time.deltaTime)); // 부드러운 조준 확대
+            float targetFov = Mathf.Lerp(originalFov, originalFov * currentDefinition.AimFovRatio, aimProgress); // 현재 목표 시야각
+            aimCamera.fieldOfView = targetFov; // 부드러운 조준 확대
         }
 
         UpdateSpread(); // 이동과 공중 상태를 반영한 실제 분산 갱신
         if (pendingShot) // 단발 예약 확인
         {
             pendingShot = false; // 같은 프레임 중복 발사 방지
-            TryFire(); // 총구 기준 발사 처리
+            Physics.SyncTransforms(); // 이번 프레임 이동한 적 부위와 총구 충돌 위치 반영
+            for (int i = 0; i < pendingShotCount; i++) // 프레임 보정된 실제 예약 순서 처리
+            {
+                if (!FireScheduled(scheduledShots[i])) // 한 발마다 탄약과 행동 상태 검사
+                {
+                    triggerState.Reset(); // 빈 탄창과 행동 중단의 나머지 예약 폐기
+                    break; // 남은 연사 중단
+                }
+            }
+            pendingShotCount = 0; // 처리된 예약 수 초기화
         }
     }
 
@@ -261,7 +317,10 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
         bool crouching = movement != null && movement.IsCrouching; // 실제 앉기 상태 확인
         CharacterController body = movement != null ? movement.Controller : null; // 실제 이동을 수행한 충돌체 확인
         float speed = body != null && body.enabled ? Vector3.ProjectOnPlane(body.velocity, Vector3.up).magnitude : 0f; // 벽에 막힌 이동을 제외한 실제 수평 속도
-        currentSpread = FirearmHandlingMath.SpreadAngle(Handling, IsAiming, grounded, crouching, speed, currentHandling != null ? currentHandling.Bloom : 0f); // 공통 공식으로 현재 분산 계산
+        float bloom = currentHandling != null ? currentHandling.Bloom : 0f; // 현재 누적 분산
+        float hip = FirearmHandlingMath.SpreadAngle(Handling, false, grounded, crouching, speed, bloom); // 비조준 최종 분산
+        float aimed = FirearmHandlingMath.SpreadAngle(Handling, true, grounded, crouching, speed, bloom); // 완전 조준 최종 분산
+        currentSpread = Mathf.Lerp(hip, aimed, aimProgress); // 공통 공식으로 현재 분산 계산
     }
 
     private void ApplyShotRecoil() // 성공한 발사만 조준 방향에 반영
@@ -271,7 +330,7 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
             return; // 기존 조준 카메라가 없는 경우 직접 회전 덮어쓰기 금지
         }
 
-        float ratio = IsAiming ? Handling.AimRecoilRatio : 1f; // 조준 상태 반동 비율
+        float ratio = Mathf.Lerp(1f, Handling.AimRecoilRatio, aimProgress); // 조준 상태 반동 비율
         Vector2 kick = new Vector2(Handling.PitchKick, UnityEngine.Random.Range(-Handling.YawKick, Handling.YawKick)) * ratio; // 무작위 좌우 반동과 수직 들림
         Vector2 limits = new Vector2(Handling.MaximumPitchKick, Handling.MaximumYawKick); // 과도한 흔들림 상한
         aimRig.AddShotRecoil(kick, limits, Handling.RecoilRecovery, Handling.RecoilRecoveryDelay); // 기본 마우스 시점에 보정만 누적
@@ -279,7 +338,7 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
 
     public bool TryReload() // 현재 총기 재장전 시도
     {
-        if (!IsEquipped || !CanOperate() || currentState == null) // 총기 사용 상태 검사
+        if (!IsEquipped || !CanOperate() || currentState == null || IsEquipping) // 총기와 장착 상태 검사
         {
             return false; // 잘못된 재장전 차단
         }
@@ -291,19 +350,28 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
         }
 
         IsAiming = false; // 재장전 중 조준 종료
+        triggerState.Reset(); // 재장전 중 연사 시간 누적 방지
+        waitForAttackRelease = AttackIsHeld(); // 장전 후 방아쇠를 다시 누르도록 제한
+        pendingShotCount = 0; // 재장전 프레임 예약 제거
         pendingShot = false; // 같은 프레임 발사 차단
         equipment.Notify("재장전 시작 - 무기 교체 시 취소"); // 재장전 안내
         return true; // 재장전 시작 완료
     }
 
-    public bool TryFire() // 피해와 탄약을 한 번만 처리하는 단발 사격
+    public bool TryFire() // 외부의 단발 호출 호환
     {
-        if (!IsEquipped || !CanOperate() || currentState == null || IsReloading) // 발사 직전 잠금 검사
+        Physics.SyncTransforms(); // 외부 호출의 최신 충돌 위치 반영
+        return FireScheduled(Time.timeAsDouble); // 현재 시각 한 발 처리
+    }
+
+    private bool FireScheduled(double shotTime) // 단발과 연사의 공통 명중 처리
+    {
+        if (!IsEquipped || !CanOperate() || currentState == null || IsReloading || IsEquipping || waitForAttackRelease) // 실제 한 발 직전 잠금 검사
         {
             return false; // 발사 불가 반환
         }
 
-        if (!currentState.TryFire(Time.time)) // 발사 간격과 잔탄 검사
+        if (!currentState.TryFireScheduled(shotTime)) // 실제 예정 간격과 잔탄 검사
         {
             if (currentState.Rounds <= 0 && Time.unscaledTime >= noticeUntil) // 빈 탄창 안내 반복 제한
             {
@@ -320,6 +388,8 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
         bool hitSomething = FirearmTargeting.CastShot(aimCamera, transform, muzzle, currentDefinition.MaximumRange, hitMask, offset, out RaycastHit hit, out Vector3 end, out bool blocked); // 같은 분산과 기존 벽 검사로 첫 명중 계산
         currentView.ShowShot(IsSuppressed ? Handling.SuppressedAudioRatio : 1f); // 외형 반동과 실제 효과음 크기 적용
         practiceShots++; // 성공한 발사만 훈련 발사 수에 포함
+        LastHitWasHead = false; // 이전 머리 명중 색상을 새 발사에 남기지 않음
+        LastHealthDamage = 0f; // 이번 발사 피해 초기화
         shotPoseUntil = Time.time + 0.18f; // 짧은 발사 자세 유지
         NoiseSystem.Emit(EquipmentTargeting.BodyCenter(transform), EffectiveNoiseRadius, NoiseType.Gunshot, gameObject); // 기존 경비 청각에 총성 전달
         if (currentDefinition.TracerMaterial != null) // 궤적 재질 확인
@@ -330,12 +400,27 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
 
         if (hitSomething && !blocked && hit.collider != null) // 총구 가림 없는 첫 명중 확인
         {
-            EnemyActor enemy = hit.collider.GetComponentInParent<EnemyActor>(); // 명중한 적의 공통 생명 관리자
-            if (enemy != null && !enemy.IsDead) // 살아 있는 적 확인
+            FirearmHitZone zone = hit.collider.GetComponent<FirearmHitZone>(); // 실제 피격 부위 검색
+            EnemyActor enemy = zone != null ? zone.Actor : hit.collider.GetComponentInParent<EnemyActor>(); // 부위가 없는 기존 적은 몸통 처리
+            FirearmDamageProbe probe = zone != null ? zone.Probe : null; // 별도 훈련 표적 확인
+            if ((enemy != null && !enemy.IsDead) || probe != null) // 유효한 적 또는 비교 표적 확인
             {
-                float multiplier = currentDefinition.DamageMultiplier(Vector3.Distance(muzzle, hit.point)); // 실제 발사 거리 피해 계산
-                enemy.TakeDamage(currentDefinition.Stats.HealthDamage * multiplier, currentDefinition.Stats.PostureDamage * multiplier, gameObject); // 한 번의 명중 피해
-                hitMarkerUntil = Time.time + 0.16f; // 명중 표식 표시
+                bool head = zone != null && zone.Region == FirearmHitRegion.Head; // 머리 판정 여부
+                EnemyFirearmHitboxes boxes = enemy != null ? enemy.GetComponent<EnemyFirearmHitboxes>() : null; // 적 방어율 조회
+                float armor = probe != null ? probe.ArmorReduction : boxes != null ? boxes.ArmorReduction : 0f; // 미설정 적은 방어율 영점 유지
+                float multiplier = currentDefinition.DamageMultiplier(Vector3.Distance(muzzle, hit.point)); // 실제 총구부터 명중점까지 거리 감쇠
+                float damage = head ? currentDefinition.HeadDamage : currentDefinition.Stats.HealthDamage; // 부위별 기획 피해 선택
+                float healthDamage = FirearmDamageMath.Resolve(damage, multiplier, armor, currentDefinition.Stats.ArmorPenetration); // 방어 관통은 적 방어율에만 적용
+                float postureDamage = currentDefinition.Stats.PostureDamage * multiplier; // 자세 피해는 기존 거리 보정 유지
+                enemy?.TakeDamage(healthDamage, postureDamage, gameObject); // 적에게 한 발 피해 적용
+                probe?.Record(head ? FirearmHitRegion.Head : FirearmHitRegion.Body, healthDamage, postureDamage); // 훈련 장치에 같은 계산 기록
+                if (probe != null) // 비교 표적 명중률 기록
+                {
+                    practiceHits++; // 이번 탄환의 표적 적중 한 번 추가
+                }
+                LastHitWasHead = head; // HUD 피격 부위 저장
+                LastHealthDamage = healthDamage; // 실제 감소 피해 저장
+                hitMarkerUntil = Time.time + 0.16f; // 기존 명중 표식 사용
             }
         }
 
@@ -388,6 +473,13 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
 
         map = input != null && input.isActiveAndEnabled && input.actions != null ? input.actions.FindActionMap("Player", false) : null; // 현재 플레이어 맵 확인
         return map != null && map.enabled; // 활성 게임 입력만 처리
+    }
+
+    private bool AttackIsHeld() // 입력 중단과 장착 중 버튼 유지 확인
+    {
+        PlayerInput source = input != null ? input : GetComponent<PlayerInput>(); // 늦은 초기화 입력 참조 보정
+        InputAction action = source != null && source.isActiveAndEnabled && source.actions != null ? source.actions.FindAction("Player/Attack", false) : null; // 다른 액션 맵과 구분
+        return action != null && action.enabled && action.IsPressed(); // 실제 유지 입력만 반환
     }
 
     private bool Pressed(string actionName) // 기존 액션의 단발 입력 확인

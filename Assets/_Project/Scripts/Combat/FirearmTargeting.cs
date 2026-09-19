@@ -14,7 +14,7 @@ public static class FirearmTargeting // 총구 기준 실제 명중 판정
         range = Mathf.Max(0.1f, range); // 유효한 검사 거리 확보
         Vector3 body = EquipmentTargeting.BodyCenter(owner); // 플레이어 충돌체 중심
         Vector3 bodyToMuzzle = muzzle - body; // 몸과 총구 사이 검사 구간
-        if (bodyToMuzzle.sqrMagnitude > 0.0001f && ClosestHit(body, bodyToMuzzle.normalized, bodyToMuzzle.magnitude, owner, mask, out hit)) // 몸 밖으로 벽을 뚫고 나온 총구 검사
+        if (bodyToMuzzle.sqrMagnitude > 0.0001f && ClosestHit(body, bodyToMuzzle.normalized, bodyToMuzzle.magnitude, owner, mask, out hit, false)) // 몸 밖으로 벽을 뚫고 나온 총구 검사
         {
             muzzleBlocked = true; // 총구 가림 기록
             endpoint = hit.point; // 앞쪽 장애물 위치 기록
@@ -59,15 +59,37 @@ public static class FirearmTargeting // 총구 기준 실제 명중 판정
         return true; // 가장 가까운 대상만 명중
     }
 
-    private static bool ClosestHit(Vector3 origin, Vector3 direction, float distance, Transform owner, int mask, out RaycastHit closest) // 자기 몸을 제외한 최근접 충돌 선택
+    private static bool ClosestHit(Vector3 origin, Vector3 direction, float distance, Transform owner, int mask, out RaycastHit closest, bool includeRegions = true) // 총기 부위와 일반 장애물 구분
     {
         closest = default; // 충돌 결과 초기화
-        RaycastHit[] hits = Physics.RaycastAll(origin, direction, distance, mask, QueryTriggerInteraction.Ignore); // 검사 구간 충돌 수집
+        RaycastHit[] hits = Physics.RaycastAll(origin, direction, distance, mask, includeRegions ? QueryTriggerInteraction.Collide : QueryTriggerInteraction.Ignore); // 검사 구간 충돌 수집
         float nearest = float.PositiveInfinity; // 최근접 거리 초기화
         bool found = false; // 결과 존재 상태
         for (int i = 0; i < hits.Length; i++) // 정렬되지 않은 결과 순회
         {
-            if (EquipmentTargeting.IsOwnCollider(hits[i].collider, owner) || hits[i].distance >= nearest) // 자기 몸과 더 먼 결과 제외
+            Collider collider = hits[i].collider; // 현재 충돌체 확인
+            if (collider == null || EquipmentTargeting.IsOwnCollider(collider, owner)) // 누락과 자기 몸 제외
+            {
+                continue; // 다음 충돌 검사
+            }
+
+            FirearmHitZone zone = collider.GetComponent<FirearmHitZone>(); // 총기용 부위 표식 확인
+            if (collider.isTrigger && (zone == null || !zone.AcceptsHit)) // 일반 상호작용 트리거와 사망 부위 제외
+            {
+                continue; // 연막과 아이템 영역을 탄도에서 제외
+            }
+
+            if (includeRegions && zone == null) // 별도 부위가 있는 적의 이동용 몸통 확인
+            {
+                EnemyActor actor = collider.GetComponentInParent<EnemyActor>(); // 충돌체의 적 소유자 확인
+                EnemyFirearmHitboxes boxes = actor != null ? actor.GetComponent<EnemyFirearmHitboxes>() : null; // 실제 대체 부위 준비 확인
+                if (actor != null && !actor.IsDead && boxes != null && boxes.Ready) // 완성된 살아 있는 적만 대체
+                {
+                    continue; // 큰 이동 캡슐이 머리 판정을 가리는 문제 방지
+                }
+            }
+
+            if (hits[i].distance >= nearest) // 더 먼 충돌 결과 제외
             {
                 continue; // 다음 충돌 검사
             }

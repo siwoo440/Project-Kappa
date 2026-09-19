@@ -13,6 +13,18 @@ public sealed class FirearmDefinition : ScriptableObject // 총기 고정 설정
 
     [SerializeField] private FirearmHandlingProfile handling; // 11일차 분산 반동 소음기 설정
 
+    [SerializeField] private FirearmFireMode fireMode; // 12일차 반자동과 자동 구분
+    [SerializeField, Min(0f)] private float equipDuration = 0.25f; // 장착 후 사용 대기
+    [SerializeField, Min(0.01f)] private float aimDuration = 0.18f; // 완전 조준까지 걸리는 시간
+    [SerializeField, Range(0.1f, 1.2f)] private float movementMultiplier = 1f; // 기본 이동 대비 장착 속도
+    [SerializeField, Min(0f)] private float headDamage; // 영점이면 기존 몸통 피해 사용
+    public FirearmFireMode FireMode => fireMode; // 방아쇠 방식 조회
+    public float EquipDuration => Mathf.Max(0f, equipDuration); // 총기별 장착 지연 조회
+    public float AimDuration => Mathf.Max(0.01f, aimDuration); // 조준 전환 시간 조회
+    public float MovementMultiplier => Mathf.Clamp(movementMultiplier, 0.1f, 1.2f); // 이동 보정 조회
+    public float HeadDamage => headDamage > 0f ? headDamage : stats != null ? stats.HealthDamage : 0f; // 기존 권총 부위 피해 호환
+    public string FireModeLabel => fireMode == FirearmFireMode.Automatic ? "자동" : "반자동"; // HUD 발사 방식 이름
+
     public FirearmHandlingProfile Handling => handling; // 공통 사격 감각 설정 조회
     public WeaponData Stats => stats; // 공통 수치 조회
     public GameObject ModelPrefab => modelPrefab; // 프리팹 조회
