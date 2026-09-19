@@ -37,6 +37,11 @@ public sealed class DetectionSensor : MonoBehaviour // 시야 청각 탐지 센�
     public float LastHeardAt => lastHeardAt; // 청각 반응 검사
     public int GunshotsHeard => gunshotsHeard; // 총성 반응 횟수 조회
     public float HearingRadius => hearingRadius; // 실제 청각 반경 조회
+    public float VisionDistance => visionDistance; // 실제 시야 거리 조회
+    public float VisionAngle => visionAngle; // 실제 시야 각도 조회
+    public LayerMask VisionMask => visionMask; // 실제 시야 충돌 마스크 조회
+    public Transform VisionSource => SightSource; // 실제 시야 기준 트랜스폼 조회
+    public Vector3 VisionOriginWorld => SightSource.TransformPoint(visionOriginOffset) + SightSource.forward * 0.05f; // 실제 시야 원점 조회
 
     private DetectionState state; // 현재 탐지 상태
     private float detectionProgress; // 현재 탐지 진행도
@@ -178,6 +183,7 @@ public sealed class DetectionSensor : MonoBehaviour // 시야 청각 탐지 센�
         {
             SetState(DetectionState.Suspicious); // 의심 상태 적용
         }
+
         BalanceTelemetry.PublishHearing(this, noiseEvent); // 실제 청취 성공만 별도 계측
     }
 
@@ -202,6 +208,7 @@ public sealed class DetectionSensor : MonoBehaviour // 시야 청각 탐지 센�
             {
                 SetState(detectionProgress > 0f ? DetectionState.Suspicious : DetectionState.Idle); // 탐지량 기준 상태 전환
             }
+
             return; // 상태 처리 종료
         }
 
