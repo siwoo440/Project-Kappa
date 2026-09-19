@@ -10,6 +10,7 @@ public sealed class PlayerEquipmentManager : MonoBehaviour // 근접 무기와 �
     [SerializeField] private Transform weaponSocket; // 근접 무기 장착 위치
     [SerializeField] private EquipmentTuning tuning; // 보조장비와 소모품 수치
     [SerializeField, Min(0f)] private float switchDuration = 0.25f; // 무기 교체 대기 시간
+    private PlayerFirearmController firearm; // 총기 장착과 재장전 상태
     private PlayerInput input; // 입력 컴포넌트 참조
     private PlayerCombatController combat; // 검 공격 참조
     private PlayerDefenseController defense; // 방어 참조
@@ -29,6 +30,10 @@ public sealed class PlayerEquipmentManager : MonoBehaviour // 근접 무기와 �
     public EquipmentTuning Tuning => tuning; // 보조장비 설정 조회
     public MeleeWeaponDefinition CurrentWeapon => weapons != null && selectedIndex >= 0 && selectedIndex < weapons.Length ? weapons[selectedIndex] : null; // 현재 무기 조회
     public int WeaponCount => weapons != null ? weapons.Length : 0; // 무기 개수 조회
+    public PlayerFirearmController Firearm => firearm; // 총기 관리자 조회
+    public bool IsFirearmEquipped => firearm != null && firearm.IsEquipped; // 현재 장착 종류 조회
+    public int TotalSlotCount => WeaponCount + (firearm != null ? firearm.Count : 0); // 근접과 총기의 전체 슬롯
+    public int CurrentSlot => IsFirearmEquipped ? WeaponCount + firearm.SelectedIndex : selectedIndex; // 현재 전체 슬롯 번호
     public int SelectedIndex => selectedIndex; // 선택 번호 조회
     public bool IsBusy => Time.time < busyUntil; // 장비 행동 잠금 조회
     public string Message => Time.unscaledTime < messageUntil ? message : string.Empty; // 유효한 안내 조회
@@ -50,7 +55,7 @@ public sealed class PlayerEquipmentManager : MonoBehaviour // 근접 무기와 �
             InitializeEquipment(); // 참조가 늦게 준비된 경우 재시도
         }
 
-        if (!ready || !CanUseEquipment()) // 장비 입력 허용 상태 확인
+        if (!ready || !CanSwitchWeapon()) // 재장전 취소용 교체 입력은 별도 허용
         {
             return; // 장비 입력 중단
         }
@@ -61,24 +66,32 @@ public sealed class PlayerEquipmentManager : MonoBehaviour // 근접 무기와 �
             return; // 다음 프레임부터 입력 처리
         }
 
-        for (int i = 0; i < WeaponCount; i++) // 숫자 무기 선택 순회
+        for (int i = 0; i < TotalSlotCount; i++) // 근접과 총기 숫자 선택 순회
         {
             if (Pressed("Equip" + (i + 1))) // 숫자 키 선택 확인
             {
-                TryEquip(i); // 선택 무기 장착
+                TryEquipSlot(i); // 선택 종류의 무기 장착
                 return; // 한 프레임 장비 행동 하나로 제한
             }
         }
 
         if (Pressed("Next")) // 다음 무기 입력 확인
         {
-            TryEquip(EquipmentRules.WrapIndex(selectedIndex + 1, WeaponCount)); // 다음 무기 장착
+            TryEquipSlot(EquipmentRules.WrapIndex(CurrentSlot + 1, TotalSlotCount)); // 총기를 포함한 다음 슬롯 장착
+            return; // 교체 프레임의 다른 장비 사용 방지
         }
         else if (Pressed("Previous")) // 이전 무기 입력 확인
         {
-            TryEquip(EquipmentRules.WrapIndex(selectedIndex - 1, WeaponCount)); // 이전 무기 장착
+            TryEquipSlot(EquipmentRules.WrapIndex(CurrentSlot - 1, TotalSlotCount)); // 총기를 포함한 이전 슬롯 장착
+            return; // 교체 프레임의 다른 장비 사용 방지
         }
-        else if (Pressed("CycleItem")) // 소모품 선택 입력 확인
+
+        if (!CanUseEquipment()) // 재장전 중 보조장비와 소모품 제한
+        {
+            return; // 교체 이외 장비 행동 차단
+        }
+
+        if (Pressed("CycleItem")) // 소모품 선택 입력 확인
         {
             consumables.Cycle(); // 다음 소모품 선택
         }
@@ -99,9 +112,14 @@ public sealed class PlayerEquipmentManager : MonoBehaviour // 근접 무기와 �
         tuning = settings; // 장비 수치 저장
     }
 
-    public bool CanUseEquipment() // 공격과 특수 행동의 입력 충돌 검사
+    public bool CanUseEquipment() // 보조장비와 소모품 사용 제한
     {
-        if (!isActiveAndEnabled || IsBusy || health == null || health.IsDead || health.IsPostureBroken) // 생존과 장비 잠금 확인
+        return CanSwitchWeapon() && (firearm == null || !firearm.IsReloading); // 재장전 도중 중복 장비 사용 차단
+    }
+
+    public bool CanSwitchWeapon() // 재장전 취소를 허용하는 장착 제한
+    {
+        if (!isActiveAndEnabled || Time.timeScale <= 0f || IsBusy || health == null || health.IsDead || health.IsPostureBroken) // 생존과 장비 잠금 확인
         {
             return false; // 장비 사용 금지
         }
@@ -126,12 +144,12 @@ public sealed class PlayerEquipmentManager : MonoBehaviour // 근접 무기와 �
 
     public bool TryEquip(int index) // 근접 무기 교체 시도
     {
-        if (!ready || !CanUseEquipment() || index < 0 || index >= WeaponCount || weapons[index] == null) // 유효한 교체 조건 확인
+        if (!ready || !CanSwitchWeapon() || index < 0 || index >= WeaponCount || weapons[index] == null) // 유효한 교체 조건 확인
         {
             return false; // 무기 교체 실패
         }
 
-        if (index == selectedIndex) // 같은 무기 선택 확인
+        if (index == selectedIndex && !IsFirearmEquipped) // 같은 근접 무기 선택 확인
         {
             return true; // 불필요한 교체 생략
         }
@@ -140,6 +158,42 @@ public sealed class PlayerEquipmentManager : MonoBehaviour // 근접 무기와 �
         BeginUse(switchDuration); // 교체 대기 적용
         Notify(CurrentWeapon.DisplayName + " 장착"); // 장착 안내
         return true; // 교체 성공
+    }
+
+    public bool TryEquipSlot(int slot) // 전체 장비 슬롯 선택
+    {
+        return slot < WeaponCount ? TryEquip(slot) : TryEquipFirearm(slot - WeaponCount); // 근접과 총기 장착 분기
+    }
+
+    public bool TryEquipFirearm(int index) // 총기 선택과 기존 검 숨김
+    {
+        if (!ready || !CanSwitchWeapon() || firearm == null) // 교체 가능한 실행 상태 확인
+        {
+            return false; // 장착 실패 반환
+        }
+
+        if (IsFirearmEquipped && firearm.SelectedIndex == index) // 현재 총기 재선택 확인
+        {
+            return true; // 재장전과 탄약을 초기화하지 않고 유지
+        }
+
+        if (!firearm.Equip(index)) // 총기 데이터와 모형 연결 확인
+        {
+            Notify("총기 설정을 확인하세요 - Day 10 설정 메뉴"); // 미완성 장착 안내
+            return false; // 이전 근접 무기 유지
+        }
+
+        for (int i = 0; i < models.Length; i++) // 기존 근접 모형 순회
+        {
+            if (models[i] != null) // 존재하는 모형 확인
+            {
+                models[i].SetActive(false); // 총과 검의 동시 표시 방지
+            }
+        }
+
+        BeginUse(switchDuration); // 장착 전환 대기
+        Notify(firearm.Definition.DisplayName + " 장착"); // 총기 장착 안내
+        return true; // 장착 완료
     }
 
     public void BeginUse(float duration) // 장비 행동 잠금 시작
@@ -161,6 +215,7 @@ public sealed class PlayerEquipmentManager : MonoBehaviour // 근접 무기와 �
 
     private void ResolveReferences() // 관련 컴포넌트 조회
     {
+        firearm = GetComponent<PlayerFirearmController>(); // 총기 관리자 연결
         input = GetComponent<PlayerInput>(); // 입력 연결
         combat = GetComponent<PlayerCombatController>(); // 공격 연결
         defense = GetComponent<PlayerDefenseController>(); // 방어 연결
@@ -210,6 +265,11 @@ public sealed class PlayerEquipmentManager : MonoBehaviour // 근접 무기와 �
 
     private void ApplyWeapon(int index) // 무기 외형과 수치 동시 적용
     {
+        if (firearm != null) // 총기 장착 상태 확인
+        {
+            firearm.Unequip(); // 총기를 숨기고 미완료 재장전 취소
+        }
+
         selectedIndex = index; // 현재 무기 번호 저장
         for (int i = 0; i < models.Length; i++) // 무기 모형 순회
         {

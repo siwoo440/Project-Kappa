@@ -63,7 +63,7 @@ public sealed class PlayerCombatController : MonoBehaviour // 플레이어 기�
 
     private void Update() // 매 프레임 전투 처리
     {
-        bool blocked = (health != null && (health.IsDead || health.IsPostureBroken)) || (assassination != null && assassination.IsAssassinating) || (equipment != null && equipment.IsBusy); // 생존과 장비 행동 잠금 확인
+        bool blocked = (health != null && (health.IsDead || health.IsPostureBroken)) || (assassination != null && assassination.IsAssassinating) || (equipment != null && (equipment.IsBusy || equipment.IsFirearmEquipped)); // 총기 장착 중 검 공격 차단
         if (blocked) // 공격 중단 조건 확인
         {
             if (isAttacking) // 진행 중 공격 확인

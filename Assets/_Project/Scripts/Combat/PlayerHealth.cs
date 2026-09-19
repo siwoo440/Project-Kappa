@@ -21,6 +21,7 @@ public sealed class PlayerHealth : MonoBehaviour // 플레이어 체력 자세 �
     private float regenDelayTimer; // 자세 회복 대기 시간
     private bool postureBroken; // 자세 붕괴 상태
     private bool dead; // 사망 상태
+    private bool resumeMovementAfterBreak; // 자세 붕괴 전에 이동 가능했던 상태
 
     public float CurrentHealth => currentHealth; // 현재 체력 읽기
     public float MaxHealth => maxHealth; // 최대 체력 읽기
@@ -53,7 +54,7 @@ public sealed class PlayerHealth : MonoBehaviour // 플레이어 체력 자세 �
                 postureBroken = false; // 자세 붕괴 해제
                 currentPosture = Mathf.Max(1f, maxPosture * postureRecoveryRatio); // 자세 일부 회복
 
-                if (movement != null) // 이동 관리자 확인
+                if (movement != null && resumeMovementAfterBreak) // 자신이 잠근 이동만 복구
                 {
                     movement.SetMovementEnabled(true); // 이동 복구
                 }
@@ -85,19 +86,26 @@ public sealed class PlayerHealth : MonoBehaviour // 플레이어 체력 자세 �
 
     public void TakeDamage(float healthDamage, float postureDamage, GameObject attacker) // 피해 적용
     {
-        if (dead || postureBroken) // 피해 가능 상태 확인
+        if (dead) // 사망 후 중복 피해만 차단
         {
             return; // 피해 처리 중단
         }
 
         currentHealth = Mathf.Max(0f, currentHealth - Mathf.Max(0f, healthDamage)); // 체력 피해 적용
-        currentPosture = Mathf.Max(0f, currentPosture - Mathf.Max(0f, postureDamage)); // 자세 피해 적용
+        if (!postureBroken) // 붕괴 시간 재시작 없이 체력 피해만 허용
+        {
+            currentPosture = Mathf.Max(0f, currentPosture - Mathf.Max(0f, postureDamage)); // 정상 상태의 자세 피해 적용
+        }
         regenDelayTimer = postureRegenDelay; // 자세 회복 대기 초기화
         Debug.Log($"Player 피해 {healthDamage:0} / HP {currentHealth:0}/{maxHealth:0} / 자세 {currentPosture:0}/{maxPosture:0}"); // 피해 로그 출력
 
         if (currentHealth <= 0f) // 체력 소진 확인
         {
             dead = true; // 사망 상태 저장
+            postureBroken = false; // 사망 후 자세 회복 방지
+            GetComponent<PlayerFirearmController>()?.Interrupt(); // 재장전과 발사 예약 즉시 중단
+            GetComponent<PlayerCombatController>()?.SetExternalLock(true); // 사망 직후 검 공격 중단
+            defense?.SetExternalLock(true); // 사망 직후 방어 중단
 
             if (movement != null) // 이동 관리자 확인
             {
@@ -108,7 +116,7 @@ public sealed class PlayerHealth : MonoBehaviour // 플레이어 체력 자세 �
             return; // 추가 처리 중단
         }
 
-        if (currentPosture <= 0f) // 자세 소진 확인
+        if (!postureBroken && currentPosture <= 0f) // 연속 피격으로 붕괴 시간을 다시 시작하지 않도록 제한
         {
             BreakPosture(); // 자세 붕괴 처리
         }
@@ -116,6 +124,8 @@ public sealed class PlayerHealth : MonoBehaviour // 플레이어 체력 자세 �
 
     private void BreakPosture() // 플레이어 자세 붕괴 처리
     {
+        resumeMovementAfterBreak = movement != null && movement.MovementEnabled; // 기존 이동 가능 여부 보존
+        GetComponent<PlayerFirearmController>()?.Interrupt(); // 자세 붕괴 즉시 재장전 취소
         postureBroken = true; // 자세 붕괴 상태 저장
         breakTimer = postureBreakDuration; // 붕괴 시간 저장
         currentPosture = 0f; // 자세 수치 고정

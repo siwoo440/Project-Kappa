@@ -204,5 +204,20 @@ public sealed class EnemyActor : MonoBehaviour // 적 공통 생명 관리자
         {
             combatUI.enabled = false; // 통합 UI 비활성화
         }
+
+        Canvas[] ownedCanvases = GetComponentsInChildren<Canvas>(true); // 남아 있는 적 소유 UI 확인
+        for (int i = 0; i < ownedCanvases.Length; i++) // 적의 자식 캔버스 순회
+        {
+            if (ownedCanvases[i].GetComponentInParent<EnemyActor>() == this) // 다른 적의 UI와 구분
+            {
+                ownedCanvases[i].enabled = false; // 갱신 중단 전에 남은 화면도 숨김
+            }
+        }
+
+        Transform sector = transform.Find("__VisionSector"); // 자신의 감시 영역 모형 조회
+        if (sector != null) // 생성된 감시 영역 확인
+        {
+            sector.gameObject.SetActive(false); // 사망 후 시야 부채꼴 잔류 방지
+        }
     }
 }

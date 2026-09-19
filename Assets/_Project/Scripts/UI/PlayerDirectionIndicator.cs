@@ -1,5 +1,6 @@
 using UnityEngine; // 유니티 기본 기능
 
+[DefaultExecutionOrder(50)] // 총기 발사 상태 확정 뒤 발밑 표시 갱신
 [DisallowMultipleComponent] // 중복 부착 방지
 [RequireComponent(typeof(CharacterController))] // 캐릭터 컨트롤러 필수 지정
 public sealed class PlayerDirectionIndicator : MonoBehaviour // 플레이어 방향 표시 관리자
@@ -80,8 +81,13 @@ public sealed class PlayerDirectionIndicator : MonoBehaviour // 플레이어 방
         bool moving = horizontalSpeed > movementThreshold; // 이동 상태 계산
         bool groundedAllowed = !requireGrounded || controller == null || controller.isGrounded; // 지상 표시 조건 계산
         bool movementAllowed = movement == null || movement.MovementEnabled; // 이동 시스템 조건 계산
-        bool actionBusy = (equipment != null && equipment.IsBusy) || (health != null && (health.IsDead || health.IsPostureBroken)) || (defense != null && defense.IsDefending) || (assassination != null && assassination.IsAssassinating) || (combat != null && combat.IsAttacking); // 특수 행동 표시 제한
+        bool actionBusy = (equipment != null && equipment.IsBusy) || (health != null && (health.IsDead || health.IsPostureBroken)) || (defense != null && defense.IsDefending) || (assassination != null && assassination.IsAssassinating) || (combat != null && combat.IsAttacking) || (equipment != null && equipment.Firearm != null && equipment.Firearm.SuppressesDirection); // 총기 조준과 재장전까지 표시 제한
         bool shouldShow = moving && groundedAllowed && movementAllowed && !suppressed && !actionBusy; // 최종 표시 조건 계산
+        if (actionBusy) // 특수행동 중 페이드 잔상 방지
+        {
+            visibility = 0f; // 행동 시작과 동시에 숨김
+        }
+
         float targetVisibility = shouldShow ? 1f : 0f; // 목표 표시 비율 계산
         visibility = Mathf.MoveTowards(visibility, targetVisibility, fadeSpeed * Time.deltaTime); // 표시 비율 보간
         UpdateGroundPose(); // 바닥 위치와 방향 갱신

@@ -27,6 +27,7 @@ public sealed class EquipmentTrainingStation : MonoBehaviour, IInteractable // �
         SupportEquipmentController support = interactor.GetComponent<SupportEquipmentController>(); // 보조장비 조회
         ConsumableController consumables = interactor.GetComponent<ConsumableController>(); // 소모품 조회
         health.Heal(health.MaxHealth); // 훈련용 체력 회복
+        interactor.GetComponent<PlayerFirearmController>()?.RefillAll(); // 장착 여부와 무관하게 생성된 총기 탄약 보충
         if (support != null) // 보조장비 보유 확인
         {
             support.Refill(); // 마비침 보충

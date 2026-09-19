@@ -1,75 +1,138 @@
-using UnityEngine; // 유니티 화면 표시 기능
+using UnityEngine; // 장비 화면 표시 기능
 
-[DisallowMultipleComponent] // 중복 HUD 방지
-public sealed class PlayerEquipmentHUD : MonoBehaviour // 장착 무기와 아이템 테스트 HUD
+[DisallowMultipleComponent] // 장비 HUD 중복 방지
+public sealed class PlayerEquipmentHUD : MonoBehaviour // 근접 총기 보조장비 통합 HUD
 {
-    private PlayerEquipmentManager equipment; // 현재 장비 참조
-    private SupportEquipmentController support; // 보조장비 참조
+    private PlayerEquipmentManager equipment; // 장착 장비 참조
+    private PlayerFirearmController firearm; // 탄약과 조준 참조
+    private SupportEquipmentController support; // 마비침 참조
     private ConsumableController consumables; // 소모품 참조
-    private PlayerInteraction interaction; // F 상호작용 대상
-    private PlayerAssassination assassination; // 암살 안내 상태
-    private GUIStyle titleStyle; // 제목 글자 스타일
-    private GUIStyle bodyStyle; // 본문 글자 스타일
+    private PlayerInteraction interaction; // 상호작용 참조
+    private PlayerAssassination assassination; // 암살 안내 참조
+    private PlayerHealth health; // 사망 화면 제한
+    private GUIStyle titleStyle; // 장비 제목 스타일
+    private GUIStyle bodyStyle; // 수치 안내 스타일
     private GUIStyle hintStyle; // 중앙 안내 스타일
 
-    private void Awake() // HUD 참조 연결
+    private void Awake() // 기존 장비 시스템 연결
     {
-        equipment = GetComponent<PlayerEquipmentManager>(); // 장비 관리자 연결
-        support = GetComponent<SupportEquipmentController>(); // 보조장비 연결
+        equipment = GetComponent<PlayerEquipmentManager>(); // 장착 관리자 연결
+        firearm = GetComponent<PlayerFirearmController>(); // 총기 관리자 연결
+        support = GetComponent<SupportEquipmentController>(); // 마비침 연결
         consumables = GetComponent<ConsumableController>(); // 소모품 연결
-        interaction = GetComponent<PlayerInteraction>(); // 상호작용 연결
-        assassination = GetComponent<PlayerAssassination>(); // 암살 연결
+        interaction = GetComponent<PlayerInteraction>(); // F 입력 대상 연결
+        assassination = GetComponent<PlayerAssassination>(); // 암살 안내 연결
+        health = GetComponent<PlayerHealth>(); // 생존 상태 연결
     }
 
-    private void OnGUI() // 테스트 장비 화면 표시
+    private void OnGUI() // 기존 HUD 하나에서 모든 장비 표시
     {
-        if (equipment == null || equipment.CurrentWeapon == null) // 장착 상태 확인
+        if (equipment == null || (!equipment.IsFirearmEquipped && equipment.CurrentWeapon == null)) // 표시 가능한 장착 상태 확인
         {
-            return; // 미구성 장비 표시 생략
+            return; // 미설정 상태 표시 생략
         }
 
-        EnsureStyles(); // GUI 호출 안에서 스타일 구성
-        float width = Mathf.Min(350f, Screen.width - 24f); // 작은 화면 너비 보정
-        Rect panel = new Rect(Screen.width - width - 12f, Screen.height - 226f, width, 214f); // 우측 하단 장비 영역
-        GUI.Box(panel, GUIContent.none); // 장비 패널 배경
-        MeleeWeaponDefinition weapon = equipment.CurrentWeapon; // 선택 무기 조회
-        WeaponData stats = weapon.Stats; // 공통 무기 수치 조회
-        float x = panel.x + 14f; // 글자 왼쪽 여백
-        float y = panel.y + 10f; // 글자 위쪽 여백
-        GUI.Label(new Rect(x, y, width - 28f, 27f), "[" + (equipment.SelectedIndex + 1) + "] " + weapon.DisplayName, titleStyle); // 장착 무기 이름
-        GUI.Label(new Rect(x, y + 30f, width - 28f, 23f), stats != null ? "피해 " + stats.HealthDamage.ToString("0") + " / 자세 " + stats.PostureDamage.ToString("0") + " / 간격 " + stats.FireInterval.ToString("0.00") + "초" : string.Empty, bodyStyle); // 실제 무기 수치
-        GUI.Label(new Rect(x, y + 56f, width - 28f, 25f), "[R] 마비침  " + (support != null ? support.RemainingDarts + "/" + support.Capacity : "0"), bodyStyle); // 보조장비 탄수
-        GUI.Label(new Rect(x, y + 83f, width - 28f, 25f), consumables != null ? "[G] " + consumables.SelectedName + "  x" + consumables.SelectedCount : string.Empty, bodyStyle); // 선택 소모품과 수량
-        GUI.Label(new Rect(x, y + 112f, width - 28f, 42f), "1~4 무기 선택   Q/E 이전·다음\nV 아이템 선택   F 상호작용·보급", bodyStyle); // 장비 조작 안내
-        GUI.Label(new Rect(x, y + 162f, width - 28f, 32f), equipment.Message, bodyStyle); // 실패 원인과 사용 결과
-
-        if (interaction != null && interaction.HasTarget && (assassination == null || !assassination.HasTarget)) // 암살 안내와 중복 방지
+        EnsureStyles(); // GUI 컨텍스트에서 글자 설정
+        Matrix4x4 savedMatrix = GUI.matrix; // 다른 UI의 화면 변환 보존
+        Color savedColor = GUI.color; // 다른 UI의 색상 보존
+        float scale = Mathf.Max(0.1f, Mathf.Min(1f, Screen.width / 760f, Screen.height / 560f)); // 작은 Game 창에서도 잘리지 않는 축소율
+        GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, Vector3.one * scale); // 장비 패널에만 해상도 보정 적용
+        float width = Screen.width / scale; // 보정된 화면 너비
+        float height = Screen.height / scale; // 보정된 화면 높이
+        try // UI 상태 복구 보장
         {
-            GUI.Box(new Rect(Screen.width * 0.5f - 175f, Screen.height * 0.74f, 350f, 36f), "[F] " + interaction.CurrentLabel, hintStyle); // 일반 상호작용 안내
+            DrawPanel(width, height); // 단일 장비 패널 표시
+            if (health == null || !health.IsDead) // 살아 있는 플레이어 안내 확인
+            {
+                DrawReticle(width, height); // 단일 조준점과 명중 표시
+                if (interaction != null && interaction.HasTarget && (assassination == null || !assassination.HasTarget)) // 암살 안내와 중복 방지
+                {
+                    GUI.Box(new Rect(width * 0.5f - 175f, height * 0.74f, 350f, 36f), "[F] " + interaction.CurrentLabel, hintStyle); // 기존 보급대와 상호작용 안내
+                }
+            }
         }
-
-        Color previous = GUI.color; // 기존 GUI 색상 저장
-        GUI.color = Color.white; // 조준점 색상 설정
-        GUI.DrawTexture(new Rect(Screen.width * 0.5f - 2f, Screen.height * 0.5f - 2f, 4f, 4f), Texture2D.whiteTexture); // 마비침 조준 중심 표시
-        GUI.color = previous; // 다른 UI 색상 복구
+        finally // 다른 HUD로 색상과 크기 영향 방지
+        {
+            GUI.matrix = savedMatrix; // 화면 변환 복원
+            GUI.color = savedColor; // 원래 색상 복원
+        }
     }
 
-    private void EnsureStyles() // 프레임 간 GUI 스타일 재사용
+    private void DrawPanel(float screenWidth, float screenHeight) // 우측 하단 장비 정보
+    {
+        const float width = 362f; // 읽기 쉬운 패널 너비
+        Rect panel = new Rect(screenWidth - width - 12f, screenHeight - 286f, width, 274f); // 화면 내부 패널 위치
+        GUI.Box(panel, GUIContent.none); // 기존 패널 배경
+        float x = panel.x + 14f; // 왼쪽 글자 여백
+        float y = panel.y + 10f; // 위쪽 글자 여백
+        bool gun = equipment.IsFirearmEquipped && firearm != null && firearm.Definition != null; // 총기 표시 모드 확인
+        WeaponData stats = gun ? firearm.Definition.Stats : equipment.CurrentWeapon.Stats; // 현재 무기의 공통 수치
+        string name = gun ? firearm.Definition.DisplayName : equipment.CurrentWeapon.DisplayName; // 현재 장착 이름
+        GUI.Label(new Rect(x, y, width - 28f, 27f), "[" + (equipment.CurrentSlot + 1) + "] " + name, titleStyle); // 장착 슬롯과 무기 이름
+        GUI.Label(new Rect(x, y + 29f, width - 28f, 22f), stats != null ? "피해 " + stats.HealthDamage.ToString("0") + " / 자세 " + stats.PostureDamage.ToString("0") + " / 간격 " + stats.FireInterval.ToString("0.00") + "초" : string.Empty, bodyStyle); // 무기별 실제 데이터 표시
+
+        if (gun && firearm.State != null) // 총기 탄약 표시 조건
+        {
+            string state = firearm.IsReloading ? "재장전 " + (firearm.ReloadProgress * 100f).ToString("0") + "%" : firearm.IsAiming ? "조준" : firearm.State.Rounds == 0 ? "T 재장전" : "단발"; // 현재 사격 상태
+            GUI.Label(new Rect(x, y + 53f, width - 28f, 23f), "탄약 " + firearm.State.Rounds + "/" + firearm.State.Capacity + "   예비 " + firearm.State.Reserve + "   " + state, bodyStyle); // 장탄수와 예비탄 구분
+            DrawReloadBar(new Rect(x, y + 81f, width - 28f, 7f), firearm.IsReloading ? firearm.ReloadProgress : 0f); // HP와 섞이지 않는 총기 재장전 표시
+        }
+        else // 기존 검술 조작 표시
+        {
+            GUI.Label(new Rect(x, y + 53f, width - 28f, 29f), "LMB 검 공격 / RMB 방어·받아치기", bodyStyle); // 기존 조작 안내 유지
+        }
+
+        GUI.Label(new Rect(x, y + 97f, width - 28f, 23f), "[R] 마비침  " + (support != null ? support.RemainingDarts + "/" + support.Capacity : "0"), bodyStyle); // 마비침 탄약 별도 유지
+        GUI.Label(new Rect(x, y + 122f, width - 28f, 23f), consumables != null ? "[G] " + consumables.SelectedName + "  x" + consumables.SelectedCount : string.Empty, bodyStyle); // 소모품 수량 유지
+        GUI.Label(new Rect(x, y + 151f, width - 28f, 57f), "1~4 검 / 5 권총 / Q·E 이전·다음\n총: LMB 발사 / RMB 조준 / T 재장전\nV 아이템 선택 / F 상호작용·보급", bodyStyle); // 충돌 없는 장비 조작 안내
+        GUI.Label(new Rect(x, y + 213f, width - 28f, 39f), equipment.Message, bodyStyle); // 실패 원인과 장비 사용 결과
+    }
+
+    private static void DrawReloadBar(Rect rect, float progress) // 재장전 게이지 표시
+    {
+        Color previous = GUI.color; // 기존 글자 색상 보존
+        GUI.color = new Color(0.13f, 0.16f, 0.20f, 1f); // 게이지 바탕 색상
+        GUI.DrawTexture(rect, Texture2D.whiteTexture); // 재장전 바탕
+        GUI.color = new Color(1f, 0.66f, 0.17f, 1f); // 총기 재장전 주황색
+        GUI.DrawTexture(new Rect(rect.x, rect.y, rect.width * Mathf.Clamp01(progress), rect.height), Texture2D.whiteTexture); // 재장전 진행도 표시
+        GUI.color = previous; // 다른 표시 색상 복원
+    }
+
+    private void DrawReticle(float width, float height) // 총기와 마비침 공용 조준점
+    {
+        float x = width * 0.5f; // 화면 중앙 가로 위치
+        float y = height * 0.5f; // 화면 중앙 세로 위치
+        GUI.color = Color.white; // 기본 조준점 색상
+        if (equipment.IsFirearmEquipped && firearm != null) // 총기 조준 표시
+        {
+            float gap = firearm.IsAiming ? 5f : 10f; // 조준 시 조준선 간격 축소
+            GUI.color = firearm.HasHitMarker ? new Color(1f, 0.55f, 0.16f) : Color.white; // 명중 시 주황색 표시
+            GUI.DrawTexture(new Rect(x - gap - 7f, y - 1f, 7f, 2f), Texture2D.whiteTexture); // 왼쪽 조준선
+            GUI.DrawTexture(new Rect(x + gap, y - 1f, 7f, 2f), Texture2D.whiteTexture); // 오른쪽 조준선
+            GUI.DrawTexture(new Rect(x - 1f, y - gap - 7f, 2f, 7f), Texture2D.whiteTexture); // 위쪽 조준선
+            GUI.DrawTexture(new Rect(x - 1f, y + gap, 2f, 7f), Texture2D.whiteTexture); // 아래쪽 조준선
+        }
+
+        GUI.DrawTexture(new Rect(x - 1f, y - 1f, 2f, 2f), Texture2D.whiteTexture); // 중복 없는 중앙 조준점
+        GUI.color = Color.white; // 이후 글자 색상 복원
+    }
+
+    private void EnsureStyles() // 기존 GUI 글꼴 재사용
     {
         if (titleStyle != null) // 스타일 생성 여부 확인
         {
-            return; // 반복 생성 방지
+            return; // 매 프레임 스타일 생성 방지
         }
 
         titleStyle = new GUIStyle(GUI.skin.label); // 제목 스타일 생성
-        titleStyle.fontSize = 20; // 제목 크기 설정
+        titleStyle.fontSize = 20; // 제목 글자 크기
         titleStyle.normal.textColor = new Color(0.3f, 0.95f, 1f); // 장비 제목 청록색
-        bodyStyle = new GUIStyle(GUI.skin.label); // 본문 스타일 생성
-        bodyStyle.fontSize = 14; // 본문 크기 설정
-        bodyStyle.wordWrap = true; // 긴 안내 줄바꿈
-        bodyStyle.normal.textColor = Color.white; // 본문 색상 설정
-        hintStyle = new GUIStyle(GUI.skin.box); // 중앙 안내 스타일 생성
-        hintStyle.fontSize = 18; // 안내 크기 설정
-        hintStyle.alignment = TextAnchor.MiddleCenter; // 안내 중앙 정렬
+        bodyStyle = new GUIStyle(GUI.skin.label); // 수치 스타일 생성
+        bodyStyle.fontSize = 14; // 수치 글자 크기
+        bodyStyle.wordWrap = true; // 긴 안내 자동 줄바꿈
+        bodyStyle.normal.textColor = Color.white; // 기본 글자 색상
+        hintStyle = new GUIStyle(GUI.skin.box); // F 안내 스타일
+        hintStyle.fontSize = 18; // F 안내 글자 크기
+        hintStyle.alignment = TextAnchor.MiddleCenter; // 중앙 정렬
     }
 }

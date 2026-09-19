@@ -54,6 +54,19 @@ public sealed class EnemyCombatBillboardUI : MonoBehaviour // 적 머리 위 전
         }
     }
 
+    private void OnDisable() // 사망과 비활성 상태의 화면 정리
+    {
+        if (canvas != null) // 생성된 캔버스 확인
+        {
+            canvas.enabled = false; // LateUpdate 없이도 즉시 숨김
+        }
+
+        if (uiRoot != null) // UI 루트 확인
+        {
+            uiRoot.gameObject.SetActive(false); // 하위 그래픽 표시 중단
+        }
+    }
+
     private void LateUpdate() // 매 프레임 UI 갱신
     {
         ResolveReferences(); // 참조 자동 연결
@@ -72,6 +85,11 @@ public sealed class EnemyCombatBillboardUI : MonoBehaviour // 적 머리 위 전
         {
             RebuildUI(); // UI 재생성
             uiBuiltThisSession = true; // 생성 완료 상태 저장
+        }
+
+        if (uiRoot != null && !uiRoot.gameObject.activeSelf) // 재활성화된 컴포넌트 확인
+        {
+            uiRoot.gameObject.SetActive(true); // 기존 UI 하나만 재사용
         }
 
         TrackStatChanges(); // 체력과 자세 변화 추적
@@ -134,6 +152,7 @@ public sealed class EnemyCombatBillboardUI : MonoBehaviour // 적 머리 위 전
         canvas = rootObject.AddComponent<Canvas>(); // 월드 캔버스 추가
         canvas.renderMode = RenderMode.WorldSpace; // 월드 공간 렌더링 적용
         canvas.sortingOrder = 70; // 정렬 순서 적용
+        canvas.enabled = false; // 표시 조건 계산 전 한 프레임 잔상 방지
         rootObject.AddComponent<CanvasScaler>().dynamicPixelsPerUnit = 10f; // 월드 픽셀 밀도 적용
         GraphicRaycaster raycaster = rootObject.AddComponent<GraphicRaycaster>(); // 레이캐스터 추가
         raycaster.enabled = false; // 입력 차단 방지
@@ -167,6 +186,7 @@ public sealed class EnemyCombatBillboardUI : MonoBehaviour // 적 머리 위 전
 
             if (Application.isPlaying) // 실행 상태 확인
             {
+                canvases[i].gameObject.SetActive(false); // 프레임 끝 삭제 전 중복 렌더링 차단
                 Destroy(canvases[i].gameObject); // 기존 하위 캔버스 제거
             }
             else // 에디터 상태 처리

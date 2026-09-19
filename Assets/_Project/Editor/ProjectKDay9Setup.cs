@@ -21,6 +21,11 @@ public static class ProjectKDay9Setup // 9일차 장비 자동 구성 도구
     [InitializeOnLoadMethod] // 컴파일 후 자동 구성 예약
     private static void Schedule() // 이전 일차 이후 설정 예약
     {
+        if (File.Exists("Assets/_Project/Data/Day10/TestPistol_Definition.asset")) // 후속 일차 구성 존재 확인
+        {
+            return; // 10일차 장착 참조를 이전 자동 설정으로 덮어쓰지 않도록 보호
+        }
+
         if (EditorPrefs.GetBool(SetupKey, false)) // 현재 프로젝트의 적용 성공 확인
         {
             return; // 에디터 재시작 시 씬 재생성 방지

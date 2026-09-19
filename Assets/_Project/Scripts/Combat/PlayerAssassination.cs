@@ -80,7 +80,7 @@ public sealed class PlayerAssassination : MonoBehaviour // 플레이어 암살 �
 
     private bool ActionBlocked() // 암살과 장비 충돌 검사
     {
-        return (equipment != null && equipment.IsBusy) || (health != null && (health.IsDead || health.IsPostureBroken)) || (defense != null && defense.IsDefending) || (combatController != null && (combatController.IsAttacking || combatController.IsLocked)); // 행동 잠금 통합
+        return (equipment != null && (equipment.IsBusy || (equipment.Firearm != null && equipment.Firearm.SuppressesDirection))) || (health != null && (health.IsDead || health.IsPostureBroken)) || (defense != null && defense.IsDefending) || (combatController != null && (combatController.IsAttacking || combatController.IsLocked)); // 행동 잠금 통합
     }
 
     private EnemyActor FindBestTarget() // 최적 암살 대상 검색
@@ -177,7 +177,7 @@ public sealed class PlayerAssassination : MonoBehaviour // 플레이어 암살 �
         FaceTarget(target.transform); // 암살 대상 바라보기
         yield return new WaitForSeconds(strikeDelay); // 암살 타격 시간 대기
 
-        if (target != null && !target.IsDead) // 대상 생존 확인
+        if (target != null && !target.IsDead && (health == null || (!health.IsDead && !health.IsPostureBroken))) // 타격 전 대상과 플레이어 생존 재검사
         {
             target.Assassinate(gameObject); // 즉시 암살 처리
         }

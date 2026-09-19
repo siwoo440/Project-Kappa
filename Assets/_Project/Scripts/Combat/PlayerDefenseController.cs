@@ -51,7 +51,7 @@ public sealed class PlayerDefenseController : MonoBehaviour // 플레이어 방�
             parryMessageTimer -= Time.deltaTime; // 메시지 시간 감소
         }
 
-        if (externalLock || health == null || health.IsDead || health.IsPostureBroken || (combat != null && combat.IsLocked) || (equipment != null && equipment.IsBusy)) // 방어 불가 상태 확인
+        if (externalLock || health == null || health.IsDead || health.IsPostureBroken || (combat != null && combat.IsLocked) || (equipment != null && (equipment.IsBusy || equipment.IsFirearmEquipped))) // 총기 장착 시 RMB 검 방어 금지
         {
             EndDefense(); // 방어 종료
             return; // 처리 중단
