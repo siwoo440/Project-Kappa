@@ -90,23 +90,135 @@ public sealed class MapCyberpunkGeometry // 사이버펑크 세부 모형 공통
         Transform sign = Node(parent, name, localPosition); // 간판 기준 노드 생성
         sign.localRotation = rotation; // 지정 방향 적용
         Box(sign, "Frame", Vector3.zero, new Vector3(size.x + 0.35f, size.y + 0.35f, 0.18f), "DarkMetal", false); // 두꺼운 금속 테두리 생성
-        GameObject face = Box(sign, "NeonFace", new Vector3(0f, 0f, -0.11f), new Vector3(size.x, size.y, 0.055f), material, false); // 발광 전면 패널 생성
+        GameObject face = Box(sign, "NeonFace", new Vector3(0f, 0f, -0.12f), new Vector3(size.x, size.y, 0.055f), material, false); // 발광 전면 패널 생성
         MapNeonPulse pulse = face.AddComponent<MapNeonPulse>(); // 패널 맥동 효과 추가
         pulse.Configure(face.GetComponent<Renderer>(), null, color, 0.8f + SignCount * 0.03f, SignCount * 0.7f); // 간판별 다른 주기 적용
         GameObject textObject = new GameObject("Label"); // 네온 문자 객체 생성
         textObject.transform.SetParent(sign, false); // 간판에 문자 연결
-        textObject.transform.localPosition = new Vector3(0f, 0f, -0.16f); // 전면 패널보다 조금 앞으로 배치
         textObject.transform.localRotation = Quaternion.identity; // 패널 방향과 동일하게 정렬
         TextMesh text = textObject.AddComponent<TextMesh>(); // 기본 글자 모형 추가
-        text.text = label; // 간판 문구 적용
-        text.characterSize = Mathf.Clamp(size.y * 0.19f, 0.24f, 0.62f); // 간판 크기에 맞춘 문자 크기
-        text.fontSize = 72; // 선명한 글자 메시 생성
-        text.fontStyle = FontStyle.Bold; // 굵은 사이버펑크 문자 강조
-        text.anchor = TextAnchor.MiddleCenter; // 중앙 기준 정렬
-        text.alignment = TextAlignment.Center; // 중앙 문장 정렬
-        text.color = color; // 패널과 같은 네온 색상 적용
+        text.text = label; // 원본 문구를 보정 함수에 전달
+        ConfigureSignText(text, size, color); // 실제 렌더 바운드와 깊이 검사를 사용해 문자 배치
         SignCount++; // 네온 간판 집계 증가
         return sign; // 추가 지지대 연결용 반환
+    }
+
+    public static string FormatSignLabel(string label, Vector3 size) // 긴 간판 문구를 패널 안의 두 줄로 정리
+    {
+        string value = string.IsNullOrWhiteSpace(label) ? "NODE" : label.Trim(); // 안전한 기본 문구 보정
+        string compact = value.Replace(" ", string.Empty).Replace("\n", "//"); // 기존 줄바꿈도 동일 규칙으로 다시 계산
+        if (compact.Contains("//") && size.y >= 0.78f) // 구분자가 있는 문구는 짧아도 두 줄 사용
+        {
+            string[] parts = compact.Split(new[] { "//" }, StringSplitOptions.RemoveEmptyEntries); // 구분자 기준 유효 문구 분리
+            if (parts.Length == 2) // 두 줄 구성이 가능한 문구 확인
+            {
+                return parts[0] + "\n" + parts[1]; // 간판 폭을 넘지 않는 두 줄 문구 반환
+            }
+        }
+        if (CountSignGlyphUnits(value) > 20 && size.y >= 1.25f) // 구분자 없는 매우 긴 문구 확인
+        {
+            int split = Mathf.Clamp(value.Length / 2, 1, value.Length - 1); // 중앙 기준 분할 위치 계산
+            return value.Substring(0, split) + "\n" + value.Substring(split); // 두 줄로 폭 제한
+        }
+        return value; // 짧은 문구는 한 줄 유지
+    }
+
+    public static float FitSignCharacterSize(string formattedLabel, Vector3 size) // 실제 바운드 측정 전 안전한 기본 문자 크기 계산
+    {
+        string[] lines = (formattedLabel ?? string.Empty).Split('\n'); // 줄 단위 문구 분리
+        int longest = 1; // 가장 긴 줄 너비 단위 기본값
+        for (int i = 0; i < lines.Length; i++) // 모든 줄 순회
+        {
+            longest = Mathf.Max(longest, CountSignGlyphUnits(lines[i])); // 실제 문자 폭 단위 갱신
+        }
+        float widthBudget = Mathf.Max(0.8f, size.x * 0.82f); // 프레임 안쪽 가로 여유 확보
+        float heightBudget = Mathf.Max(0.42f, size.y * 0.64f); // 프레임 안쪽 세로 여유 확보
+        float widthFit = widthBudget / Mathf.Max(8f, longest * 4.8f); // 큰 동적 폰트 기준 보수적인 가로 문자 크기 계산
+        float heightFit = heightBudget / Mathf.Max(5.5f, lines.Length * 5.5f); // 줄 수 기준 보수적인 세로 문자 크기 계산
+        return Mathf.Clamp(Mathf.Min(widthFit, heightFit), 0.022f, 0.085f); // 이전 0.14 최소값을 제거한 안전 범위 반환
+    }
+
+    public static void ConfigureSignText(TextMesh text, Vector3 size, Color color) // 신규와 기존 간판에 동일한 깊이·크기 규칙 적용
+    {
+        if (text == null) // 유효한 문자 컴포넌트 확인
+        {
+            return; // 잘못된 문자 제외
+        }
+        string formatted = FormatSignLabel(text.text, size); // 패널 폭에 맞춰 줄바꿈 재계산
+        text.text = formatted; // 보정된 문구 적용
+        if (text.font == null) // 기존 씬 문자의 글꼴 참조 누락 확인
+        {
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); // Unity 6 기본 월드 글꼴 연결
+        }
+        text.fontSize = 48; // 과도한 72 크기 대신 적정 동적 폰트 해상도 사용
+        text.fontStyle = FontStyle.Bold; // 네온 가독성 유지
+        text.anchor = TextAnchor.MiddleCenter; // 패널 중앙 기준 정렬
+        text.alignment = TextAlignment.Center; // 여러 줄 중앙 정렬
+        text.characterSize = FitSignCharacterSize(formatted, size); // 실제 바운드 측정 전 보수적인 크기 적용
+        text.color = color; // 기존 네온 색상 유지
+        text.transform.localPosition = new Vector3(0f, 0f, -0.205f); // 패널 앞면에서 작은 여유만 두고 배치
+        text.transform.localRotation = Quaternion.identity; // 간판 면과 동일한 방향 사용
+        text.transform.localScale = Vector3.one; // 이전 보정 스케일을 제거하고 새로 계산
+        Renderer renderer = text.GetComponent<Renderer>(); // 실제 문자 렌더러 조회
+        if (renderer == null) // 렌더러 누락 확인
+        {
+            return; // 크기와 깊이 보정 중단
+        }
+        renderer.shadowCastingMode = ShadowCastingMode.Off; // 문자 그림자 제거
+        renderer.receiveShadows = false; // 문자 그림자 수신 제거
+        renderer.sortingOrder = 0; // 3D 깊이 검사를 무시하는 높은 정렬 우선순위 제거
+        renderer.sharedMaterial = WorldTextMaterial(text); // 벽과 간판에 가려지는 깊이 검사 셰이더 적용
+        Bounds bounds = renderer.localBounds; // 생성된 글자의 실제 로컬 바운드 조회
+        if (bounds.size.x > 0.001f && bounds.size.y > 0.001f) // 즉시 계산 가능한 실제 문자 크기 확인
+        {
+            float widthScale = size.x * 0.82f / bounds.size.x; // 패널 안쪽 가로 크기에 맞춘 축소 배율
+            float heightScale = size.y * 0.64f / bounds.size.y; // 패널 안쪽 세로 크기에 맞춘 축소 배율
+            float fit = Mathf.Clamp(Mathf.Min(1f, widthScale, heightScale), 0.02f, 1f); // 확대 없이 필요한 만큼만 축소
+            text.transform.localScale = Vector3.one * fit; // 실제 렌더 결과 기준 크기 제한
+        }
+    }
+
+    public static int CountSignGlyphUnits(string text) // 폭 계산용 문자 단위 수 계산
+    {
+        int units = 0; // 누적 너비 단위 시작
+        foreach (char c in text ?? string.Empty) // 문구의 각 문자 순회
+        {
+            units += c == '/' || c == 'I' || c == '1' ? 1 : 2; // 좁은 문자와 일반 문자를 구분하여 누적
+        }
+        return Mathf.Max(1, units); // 최소 1 단위 보장
+    }
+
+    private static Material WorldTextMaterial(TextMesh text) // TextMesh가 건물 뒤에서 보이지 않는 전용 재질 준비
+    {
+        EnsureFolder(MaterialFolder); // 공용 재질 폴더 확보
+        string path = MaterialFolder + "/WorldText.mat"; // 깊이 검사 문자 재질 경로
+        Material material = AssetDatabase.LoadAssetAtPath<Material>(path); // 기존 전용 재질 조회
+        Shader shader = Shader.Find("ProjectK/WorldText"); // 깊이 검사 전용 셰이더 조회
+        if (shader == null) // 셰이더 설치 여부 확인
+        {
+            throw new InvalidOperationException("ProjectK/WorldText 셰이더가 없습니다. ZIP의 Assets 폴더 전체를 덮어쓰세요."); // 부분 설치 안내
+        }
+        if (material == null) // 최초 보정 여부 확인
+        {
+            material = new Material(shader); // 전용 문자 재질 생성
+            material.name = "WorldText"; // 재질 식별 이름 지정
+            AssetDatabase.CreateAsset(material, path); // 프로젝트 에셋으로 저장
+        }
+        else if (material.shader != shader) // 이전 셰이더를 사용하는 재질 확인
+        {
+            material.shader = shader; // 깊이 검사 셰이더로 교체
+        }
+        Texture fontTexture = text.font != null && text.font.material != null ? text.font.material.mainTexture : null; // 현재 글꼴 아틀라스 조회
+        if (fontTexture != null) // 유효한 글꼴 텍스처 확인
+        {
+            material.mainTexture = fontTexture; // 실제 글리프 알파 텍스처 연결
+        }
+        if (material.HasProperty("_Color")) // 셰이더 기본 틴트 속성 확인
+        {
+            material.SetColor("_Color", Color.white); // TextMesh 정점 색을 그대로 사용하도록 흰색 유지
+        }
+        EditorUtility.SetDirty(material); // 재질 변경 저장 표시
+        return material; // 모든 간판이 공유할 깊이 검사 재질 반환
     }
 
     public GameObject PointLight(Transform parent, string name, Vector3 localPosition, Color color, float range, float intensity) // 제한된 실제 네온 주변광 생성
