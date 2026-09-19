@@ -23,12 +23,24 @@ public static class TrainingShotResolver // 기존 탄도를 재사용하는 산
         public float Posture; // 합산 자세 피해
         public bool Head; // 머리 명중 포함
         public Vector3 Direction; // 표적 넘어짐 방향
+        public int Pellets; // 계측용 대상별 적중 펠릿
+        public int Heads; // 계측용 대상별 머리 펠릿
     }
 
     public static TrainingShotResult Resolve(Camera camera, Transform owner, Vector3 muzzle, FirearmDefinition definition, int mask, float spread, bool suppressed) // 피해만 처리하고 탄수와 총성은 호출자가 관리
     {
         TrainingShotResult result = new TrainingShotResult(); // 이번 발사 결과 초기화
         result.TrialSeconds = -1f; // 제압하지 않은 발사 기록
+        BalanceShotReport report = BalanceTelemetry.HasShotListeners ? new BalanceShotReport() : null; // 계측 중에만 별도 기록 할당
+        if (report != null) // 실제 관측 구독 확인
+        {
+            report.Shooter = owner; // 발사 주체 기록
+            report.Definition = definition; // 실제 총기 기록
+            report.Time = Time.timeAsDouble; // 물리 판정을 수행하는 게임 시각
+            report.Muzzle = muzzle; // 실제 발사점 기록
+            report.Spread = spread; // 실제 분산 기록
+            report.Suppressed = suppressed; // 실제 소음기 상태 기록
+        }
         Dictionary<Object, Impact> impacts = new Dictionary<Object, Impact>(); // 같은 대상을 한 번만 갱신하는 집계
         if (FirearmTargeting.CastShot(camera, owner, muzzle, definition.MaximumRange, mask, out RaycastHit centerHit, out Vector3 centerEnd, out bool centerBlocked) && !centerBlocked && centerHit.collider != null) // 조준한 측정 표적 확인
         {
@@ -83,6 +95,13 @@ public static class TrainingShotResolver // 기존 탄도를 재사용하는 산
             }
             EnemyFirearmHitboxes armorData = enemy != null ? enemy.GetComponent<EnemyFirearmHitboxes>() : null; // 실제 적 방어율 조회
             float armor = probe != null ? probe.ArmorReduction : armorData != null ? armorData.ArmorReduction : 0f; // 미설정 방어율 영점
+            BalanceTargetTag trialTag = reactive != null ? reactive.GetComponent<BalanceTargetTag>() : null; // 임시 표적만 시험 방어율 조회
+            if (trialTag != null && trialTag.isActiveAndEnabled) // 지정된 계측 표적 확인
+            {
+                armor = trialTag.Armor; // 임시 표적에만 시험 조건 반영
+            }
+            impact.Pellets++; // 대상별 펠릿 적중 한 번 집계
+            impact.Heads += head ? 1 : 0; // 대상별 머리 적중 한 번 집계
             float distance = definition.DamageMultiplier(Vector3.Distance(muzzle, hit.point)); // 각 펠릿의 실제 거리 감쇠
             float baseDamage = (head ? definition.HeadDamage : definition.Stats.HealthDamage) / definition.PelletCount; // 전체 피해를 펠릿 수로 나눔
             impact.Health += FirearmDamageMath.Resolve(baseDamage, distance, armor, definition.Stats.ArmorPenetration); // 부위와 방어 반영 후 합산
@@ -92,6 +111,7 @@ public static class TrainingShotResolver // 기존 탄도를 재사용하는 산
 
         foreach (Impact impact in impacts.Values) // 모든 경로 검사 이후에 피해 적용
         {
+            float measuredBefore = impact.Enemy != null ? impact.Enemy.CurrentHealth : impact.Reactive != null ? impact.Reactive.RemainingHealth : 0f; // 계측용 실제 체력 보존
             if (impact.Enemy != null && !impact.Enemy.IsDead) // 살아 있는 적 확인
             {
                 float before = impact.Enemy.CurrentHealth; // 실제 체력 감소량 기준
@@ -107,6 +127,23 @@ public static class TrainingShotResolver // 기존 탄도를 재사용하는 산
             {
                 result.TrialSeconds = impact.Reactive.LastTrialSeconds; // 최신 제압 시간 기록
             }
+            if (report != null) // 관측 중인 발사만 세부 결과 구성
+            {
+                BalanceImpactReport measured = new BalanceImpactReport(); // 이번 대상의 합산 결과
+                measured.Target = impact.Enemy != null ? (Component)impact.Enemy : impact.Reactive != null ? (Component)impact.Reactive : impact.Probe; // 같은 대상 식별
+                measured.Pellets = impact.Pellets; // 실제 적중 펠릿 수
+                measured.Heads = impact.Heads; // 실제 머리 펠릿 수
+                measured.Before = measuredBefore; // 피격 전 체력
+                measured.After = impact.Enemy != null ? impact.Enemy.CurrentHealth : impact.Reactive != null ? impact.Reactive.RemainingHealth : 0f; // 피격 후 체력
+                measured.AppliedDamage = impact.Enemy != null || impact.Reactive != null ? Mathf.Max(0f, measured.Before - measured.After) : impact.Health; // 실제 체력 감소와 단순 계산판 구분
+                measured.Killed = measured.Before > 0f && measured.After <= 0f; // 이번 발사로 제압된 대상만 판정
+                report.Impacts.Add(measured); // 대상별 결과 추가
+            }
+        }
+        if (report != null) // 관측 처리 확인
+        {
+            report.Blocked = result.Blocked; // 총구 가림 상태 저장
+            BalanceTelemetry.PublishShot(report); // 빗나간 발사도 한 번만 보고
         }
         return result; // 발사 단위 결과 반환
     }

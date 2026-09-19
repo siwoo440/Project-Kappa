@@ -178,6 +178,7 @@ public sealed class DetectionSensor : MonoBehaviour // 시야 청각 탐지 센�
         {
             SetState(DetectionState.Suspicious); // 의심 상태 적용
         }
+        BalanceTelemetry.PublishHearing(this, noiseEvent); // 실제 청취 성공만 별도 계측
     }
 
     private void DecayDetection() // 탐지 진행도 감소
@@ -223,6 +224,7 @@ public sealed class DetectionSensor : MonoBehaviour // 시야 청각 탐지 센�
 
         state = newState; // 새 상태 저장
         Debug.Log($"{name} 탐지 상태: {state}"); // 상태 변경 로그 출력
+        BalanceTelemetry.PublishDetection(this); // 이미 적용된 탐지 상태만 별도 계측
     }
 
     private void OnDrawGizmosSelected() // 선택 시 탐지 범위 표시
