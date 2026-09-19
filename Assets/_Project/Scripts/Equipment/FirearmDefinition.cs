@@ -11,6 +11,9 @@ public sealed class FirearmDefinition : ScriptableObject // 총기 고정 설정
     [SerializeField, Range(0.5f, 1f)] private float aimFovRatio = 0.8f; // 조준 중 시야각 비율
     [SerializeField] private Material tracerMaterial; // 궤적과 명중 효과 재질
 
+    [SerializeField] private FirearmHandlingProfile handling; // 11일차 분산 반동 소음기 설정
+
+    public FirearmHandlingProfile Handling => handling; // 공통 사격 감각 설정 조회
     public WeaponData Stats => stats; // 공통 수치 조회
     public GameObject ModelPrefab => modelPrefab; // 프리팹 조회
     public string DisplayName => stats != null ? stats.DisplayName : "검증용 권총"; // 표시 이름 조회
@@ -25,6 +28,12 @@ public sealed class FirearmDefinition : ScriptableObject // 총기 고정 설정
         stats = data; // 공통 무기 연결
         modelPrefab = prefab; // 표시 모형 연결
         tracerMaterial = tracer; // 효과 재질 연결
+    }
+
+    public void ConfigureHandling(FirearmHandlingProfile profile, GameObject prefab) // 사격 설정과 개선 모형 연결
+    {
+        handling = profile; // 기존 무기 수치는 유지한 조정 자료 연결
+        modelPrefab = prefab; // 소음기 지원 모형 연결
     }
 
     public float DamageMultiplier(float distance) // 거리에 따른 피해 비율

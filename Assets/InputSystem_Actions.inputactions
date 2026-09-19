@@ -195,6 +195,16 @@
                     "interactions": "",
                     "initialStateCheck": false,
                     "priority": 0
+                },
+                {
+                    "name": "ToggleSuppressor",
+                    "type": "Button",
+                    "id": "c7aeb24f-c486-4493-8a84-9ec74f8d2ab0",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
                 }
             ],
             "bindings": [
@@ -723,6 +733,17 @@
                     "processors": "",
                     "groups": "Keyboard&Mouse",
                     "action": "Reload",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "0faf96a0-f10b-44d7-972c-c4f709e03623",
+                    "path": "<Keyboard>/b",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "ToggleSuppressor",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

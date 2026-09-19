@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: TestPistol_Definition
   m_EditorClassIdentifier: Assembly-CSharp::FirearmDefinition
   stats: {fileID: 11400000, guid: a028baf961853f344ae8494e405fd18f, type: 2}
-  modelPrefab: {fileID: 5113830569539996674, guid: 5549c4360c352f944bad5c2348d36b2a, type: 3}
+  modelPrefab: {fileID: 2928643239457999096, guid: d2f3b9e32e5450a42aff34111f5d9858, type: 3}
   reloadDuration: 1.4
   maximumRange: 40
   minimumDamageRatio: 0.5
   aimFovRatio: 0.8
   tracerMaterial: {fileID: 2100000, guid: e4e87e94cb627ac4b9f4bb7f3620e57e, type: 2}
+  handling: {fileID: 11400000, guid: 33928b2a314613b42bedbc6b12c40b3d, type: 2}

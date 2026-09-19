@@ -12,6 +12,21 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
     [SerializeField] private LayerMask hitMask = ~0; // 총알 충돌 마스크
     private readonly Dictionary<FirearmDefinition, FirearmRuntimeState> states = new Dictionary<FirearmDefinition, FirearmRuntimeState>(); // 무기 교체 후에도 유지할 탄약
     private readonly Dictionary<FirearmDefinition, FirearmView> views = new Dictionary<FirearmDefinition, FirearmView>(); // 중복 생성 없는 총기 모형
+    private readonly Dictionary<FirearmDefinition, FirearmHandlingState> handlingStates = new Dictionary<FirearmDefinition, FirearmHandlingState>(); // 총기별 분산과 소음기 보존
+    private FirearmHandlingState currentHandling; // 현재 무기의 사격 감각 상태
+    private ThirdPersonCamera aimRig; // 마우스 입력과 독립된 반동 카메라
+    private float currentSpread; // 실제 발사와 HUD에 사용할 반각
+    private int practiceShots; // 이번 훈련의 실제 발사 수
+    private int practiceHits; // 이번 훈련의 표적 적중 수
+    private FirearmHandlingProfile Handling => currentDefinition != null ? currentDefinition.Handling : null; // 현재 무기 조정 자료
+    public bool IsSuppressed => currentHandling != null && currentHandling.Suppressed && Handling != null && Handling.SupportsSuppressor && currentView != null && currentView.HasSuppressor; // 실제 적용된 소음기 상태
+    public float SpreadDegrees => currentSpread; // HUD 분산 반각 조회
+    public float ReticleRadiusPixels => aimCamera != null ? FirearmHandlingMath.ReticlePixels(currentSpread, aimCamera.fieldOfView, aimCamera.pixelHeight) : 0f; // 같은 탄도 범위의 조준점 반경
+    public float EffectiveNoiseRadius => currentDefinition != null ? currentDefinition.Stats.NoiseRadius * (IsSuppressed ? Handling.SuppressedNoiseRatio : 1f) : 0f; // AI에 전달할 실제 총성 반경
+    public int PracticeShots => practiceShots; // 발사 수 조회
+    public int PracticeHits => practiceHits; // 표적 적중 수 조회
+    public float PracticeAccuracy => practiceShots > 0 ? 100f * practiceHits / practiceShots : 0f; // 표적 명중률 조회
+
     private PlayerEquipmentManager equipment; // 공통 장비 상태
     private PlayerInput input; // 플레이어 입력 참조
     private PlayerHealth health; // 생존과 자세 상태
@@ -95,10 +110,18 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
             states.Add(definition, currentState); // 교체 시 초기화하지 않을 상태 보관
         }
 
+        if (!handlingStates.TryGetValue(definition, out currentHandling)) // 처음 선택한 사격 설정 확인
+        {
+            currentHandling = new FirearmHandlingState(Time.time); // 새 무기 분산과 소음기 상태
+            handlingStates.Add(definition, currentHandling); // 교체 시 상태 유지
+        }
+
+        currentHandling.Tick(Time.time, definition.Handling); // 비장착 동안의 회복 반영
         currentDefinition = definition; // 선택 총기 저장
         SelectedIndex = index; // 총기 슬롯 번호 저장
         currentView = view; // 현재 모형 저장
         currentView.gameObject.SetActive(true); // 선택한 총기만 표시
+        currentView.SetSuppressed(IsSuppressed); // 저장한 소음기 상태 복구
         CaptureCamera(); // 카메라 원래 시야각 보존
         return true; // 장착 완료
     }
@@ -114,6 +137,8 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
         currentDefinition = null; // 장착 정의 해제
         currentState = null; // 보존 목록은 유지하고 현재 참조 해제
         currentView = null; // 모형 참조 해제
+        currentHandling = null; // 저장 목록을 유지한 현재 상태 해제
+        currentSpread = 0f; // 미장착 분산 표시 초기화
     }
 
     public void Interrupt() // 사망과 특수행동의 즉시 총기 중단
@@ -131,7 +156,7 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
             currentView.ShowReload(0f, false); // 탄창 외형 복구
         }
 
-        RestoreCamera(); // 조준 배율 원복
+        RestoreCamera(); // 조준 배율과 반동 원복
     }
 
     private void Update() // 입력과 재장전 상태 처리
@@ -148,6 +173,13 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
             return; // 입력 처리 중단
         }
 
+        currentHandling?.Tick(Time.time, Handling); // 사격하지 않는 동안 누적 분산 복구
+        if (Pressed("ToggleSuppressor") && !IsReloading) // 테스트 소음기 전환 입력 확인
+        {
+            TryToggleSuppressor(); // 탄수를 건드리지 않는 부착 전환
+            return; // 같은 프레임 발사와 장착을 함께 처리하지 않음
+        }
+
         if (currentState.TickReload(Time.time)) // 재장전 완료 처리
         {
             equipment.Notify("재장전 완료"); // 탄약 이동 완료 안내
@@ -161,6 +193,10 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
         InputAction aim = map.FindAction("Defense", false); // 무기별로 분기할 기존 RMB 입력
         IsAiming = !IsReloading && aim != null && aim.enabled && aim.IsPressed(); // 총 장착 중 RMB는 조준만 처리
         pendingShot = !IsReloading && Pressed("Attack"); // 단발 입력만 예약
+        if (aimRig != null) // 카메라 입력 감도 참조 확인
+        {
+            aimRig.SetLookMultiplier(IsAiming && Handling != null ? Handling.AimSensitivityRatio : 1f); // 기본 감도는 보존한 조준 보정
+        }
         currentView.ShowReload(ReloadProgress, IsReloading); // 재장전 탄창 모션 적용
     }
 
@@ -190,11 +226,55 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
             aimCamera.fieldOfView = Mathf.Lerp(aimCamera.fieldOfView, targetFov, 1f - Mathf.Exp(-14f * Time.deltaTime)); // 부드러운 조준 확대
         }
 
+        UpdateSpread(); // 이동과 공중 상태를 반영한 실제 분산 갱신
         if (pendingShot) // 단발 예약 확인
         {
             pendingShot = false; // 같은 프레임 중복 발사 방지
             TryFire(); // 총구 기준 발사 처리
         }
+    }
+
+    public bool TryToggleSuppressor() // 소음기 부착과 해제
+    {
+        if (!IsEquipped || !CanOperate() || IsReloading || Handling == null || !Handling.SupportsSuppressor || !currentView.HasSuppressor || currentHandling == null) // 전환 가능한 완성 총기 확인
+        {
+            return false; // 사용 불가 상태 유지
+        }
+
+        currentHandling.Suppressed = !currentHandling.Suppressed; // 해당 총기 소음기 상태 변경
+        currentView.SetSuppressed(IsSuppressed); // 총구 길이와 외형 동기화
+        Interrupt(); // 전환 중 조준과 발사 예약 정리
+        equipment.BeginUse(0.2f); // 테스트 부착 동작 대기
+        equipment.Notify(IsSuppressed ? "소음기 장착 - 가까운 경비는 들을 수 있음" : "소음기 해제"); // 실제 기능 안내
+        return true; // 전환 완료
+    }
+
+    public void ResetPracticeStatistics() // 보급대의 훈련 기록 초기화
+    {
+        practiceShots = 0; // 발사 수 초기화
+        practiceHits = 0; // 표적 적중 수 초기화
+    }
+
+    private void UpdateSpread() // 현재 사격 상태와 분산 계산
+    {
+        bool grounded = movement == null || movement.IsGrounded; // 지면 접촉 확인
+        bool crouching = movement != null && movement.IsCrouching; // 실제 앉기 상태 확인
+        CharacterController body = movement != null ? movement.Controller : null; // 실제 이동을 수행한 충돌체 확인
+        float speed = body != null && body.enabled ? Vector3.ProjectOnPlane(body.velocity, Vector3.up).magnitude : 0f; // 벽에 막힌 이동을 제외한 실제 수평 속도
+        currentSpread = FirearmHandlingMath.SpreadAngle(Handling, IsAiming, grounded, crouching, speed, currentHandling != null ? currentHandling.Bloom : 0f); // 공통 공식으로 현재 분산 계산
+    }
+
+    private void ApplyShotRecoil() // 성공한 발사만 조준 방향에 반영
+    {
+        if (aimRig == null || Handling == null) // 카메라와 사격 설정 확인
+        {
+            return; // 기존 조준 카메라가 없는 경우 직접 회전 덮어쓰기 금지
+        }
+
+        float ratio = IsAiming ? Handling.AimRecoilRatio : 1f; // 조준 상태 반동 비율
+        Vector2 kick = new Vector2(Handling.PitchKick, UnityEngine.Random.Range(-Handling.YawKick, Handling.YawKick)) * ratio; // 무작위 좌우 반동과 수직 들림
+        Vector2 limits = new Vector2(Handling.MaximumPitchKick, Handling.MaximumYawKick); // 과도한 흔들림 상한
+        aimRig.AddShotRecoil(kick, limits, Handling.RecoilRecovery, Handling.RecoilRecoveryDelay); // 기본 마우스 시점에 보정만 누적
     }
 
     public bool TryReload() // 현재 총기 재장전 시도
@@ -234,11 +314,14 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
             return false; // 실패 시 탄약과 피해 없음
         }
 
+        UpdateSpread(); // 외부 호출도 현재 자세 분산 사용
+        Vector2 offset = aimCamera != null ? FirearmHandlingMath.ViewportSample(UnityEngine.Random.insideUnitCircle, currentSpread, aimCamera.fieldOfView, aimCamera.pixelWidth, aimCamera.pixelHeight) : Vector2.zero; // HUD 안에서 고르게 선택한 조준 표본
         Vector3 muzzle = currentView.Muzzle.position; // 반동 전 실제 총구 위치
-        bool hitSomething = FirearmTargeting.CastShot(aimCamera, transform, muzzle, currentDefinition.MaximumRange, hitMask, out RaycastHit hit, out Vector3 end, out bool blocked); // 카메라와 총구의 첫 명중 계산
-        currentView.ShowShot(); // 총구 반동과 효과음 실행
+        bool hitSomething = FirearmTargeting.CastShot(aimCamera, transform, muzzle, currentDefinition.MaximumRange, hitMask, offset, out RaycastHit hit, out Vector3 end, out bool blocked); // 같은 분산과 기존 벽 검사로 첫 명중 계산
+        currentView.ShowShot(IsSuppressed ? Handling.SuppressedAudioRatio : 1f); // 외형 반동과 실제 효과음 크기 적용
+        practiceShots++; // 성공한 발사만 훈련 발사 수에 포함
         shotPoseUntil = Time.time + 0.18f; // 짧은 발사 자세 유지
-        NoiseSystem.Emit(EquipmentTargeting.BodyCenter(transform), currentDefinition.Stats.NoiseRadius, NoiseType.Gunshot, gameObject); // 기존 경비 청각에 총성 전달
+        NoiseSystem.Emit(EquipmentTargeting.BodyCenter(transform), EffectiveNoiseRadius, NoiseType.Gunshot, gameObject); // 기존 경비 청각에 총성 전달
         if (currentDefinition.TracerMaterial != null) // 궤적 재질 확인
         {
             Vector3 start = blocked ? EquipmentTargeting.BodyCenter(transform) : muzzle; // 벽 내부에서 나오는 궤적 방지
@@ -256,6 +339,20 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
             }
         }
 
+        if (hitSomething && !blocked && hit.collider != null) // 장애물을 통과하지 않은 실제 탄착 확인
+        {
+            FirearmPracticeTarget practice = hit.collider.GetComponentInParent<FirearmPracticeTarget>(); // 사격장 표적 검색
+            if (practice != null) // 훈련 표적 명중 확인
+            {
+                practice.RegisterHit(hit.point, hit.normal, IsSuppressed); // 실제 명중 위치에 탄착 표시
+                practiceHits++; // 표적 적중 기록
+                hitMarkerUntil = Time.time + 0.16f; // 기존 명중 피드백 재사용
+            }
+        }
+
+        currentHandling?.RegisterShot(Time.time, Handling); // 빗나가거나 벽에 맞아도 실제 발사는 분산 누적
+        ApplyShotRecoil(); // 탄약 소모 성공 후에만 반동 적용
+        UpdateSpread(); // 다음 발사의 분산을 조준점에 반영
         if (blocked) // 몸이나 총구 앞 벽 확인
         {
             equipment.Notify("총구 앞이 막혀 있습니다"); // 벽 명중 안내
@@ -319,6 +416,7 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
 
         RestoreCamera(); // 이전 카메라 시야 복구
         aimCamera = current; // 새 카메라 연결
+        aimRig = aimCamera != null ? aimCamera.GetComponent<ThirdPersonCamera>() : null; // 기존 카메라 반동 인터페이스 연결
         if (aimCamera != null) // 카메라 존재 확인
         {
             originalFov = aimCamera.fieldOfView; // 장착 전 시야각 저장
@@ -331,6 +429,12 @@ public sealed class PlayerFirearmController : MonoBehaviour // 장착 총기의 
         if (ownsFov && aimCamera != null) // 변경한 카메라 확인
         {
             aimCamera.fieldOfView = originalFov; // 원래 시야각 복원
+        }
+
+        if (aimRig != null) // 자신이 제어하던 카메라 확인
+        {
+            aimRig.ResetShotRecoil(); // 총기 해제 시 누적 반동 제거
+            aimRig.SetLookMultiplier(1f); // 원래 마우스 감도 복구
         }
 
         ownsFov = false; // 카메라 설정 소유권 해제

@@ -7,6 +7,11 @@ public sealed class FirearmView : MonoBehaviour // 권총 반동과 재장전 �
     [SerializeField] private Transform movingParts; // 반동을 받는 외형
     [SerializeField] private Transform magazine; // 재장전 탄창 외형
     [SerializeField] private GameObject muzzleFlash; // 짧은 총구 발광 표시
+    [SerializeField] private GameObject suppressorVisual; // 선택형 테스트 소음기 외형
+    [SerializeField] private Transform suppressedMuzzle; // 소음기 끝 실제 총구
+    private bool suppressed; // 현재 소음기 상태
+    private Vector3 flashScale; // 총구 효과 원래 크기
+    public bool HasSuppressor => suppressorVisual != null && suppressedMuzzle != null; // 소음기 구성 검사
     private AudioSource audioSource; // 검증용 발사 소리
     private AudioClip generatedClip; // 실행 중 생성한 효과음
     private Vector3 partsHome; // 외형 초기 위치
@@ -16,7 +21,7 @@ public sealed class FirearmView : MonoBehaviour // 권총 반동과 재장전 �
     private float recoil; // 현재 반동 비율
     private float flashUntil; // 총구 표시 종료 시각
 
-    public Transform Muzzle => muzzle; // 실제 총구 조회
+    public Transform Muzzle => suppressed && HasSuppressor ? suppressedMuzzle : muzzle; // 실제 총구 조회
 
     public void Configure(Transform barrelEnd, Transform parts, Transform clip, GameObject flash) // 프리팹 표시 참조 연결
     {
@@ -26,11 +31,36 @@ public sealed class FirearmView : MonoBehaviour // 권총 반동과 재장전 �
         muzzleFlash = flash; // 총구 효과 저장
     }
 
+    public void ConfigureSuppressor(GameObject visual, Transform endpoint) // 에디터 소음기 참조 연결
+    {
+        suppressorVisual = visual; // 소음기 모형 저장
+        suppressedMuzzle = endpoint; // 소음기 총구 저장
+    }
+
+    public void SetSuppressed(bool value) // 총구와 소음기 외형 동기화
+    {
+        suppressed = value && HasSuppressor; // 존재하는 소음기만 적용
+        if (suppressorVisual != null) // 모형 참조 확인
+        {
+            suppressorVisual.SetActive(suppressed); // 장착 상태에 맞춘 외형 표시
+        }
+
+        if (muzzleFlash != null && Muzzle != null) // 효과와 총구 유효성 확인
+        {
+            muzzleFlash.transform.SetParent(Muzzle, false); // 실제 끝단에서만 총구 효과 표시
+            muzzleFlash.transform.localPosition = new Vector3(0f, 0f, 0.045f); // 총구 앞 효과 위치
+            muzzleFlash.SetActive(false); // 전환 프레임의 이전 섬광 제거
+        }
+
+        flashUntil = 0f; // 이전 섬광 시간 종료
+    }
+
     private void Awake() // 초기 외형과 소리 준비
     {
         partsHome = movingParts != null ? movingParts.localPosition : Vector3.zero; // 외형 원점 기억
         partsRotation = movingParts != null ? movingParts.localRotation : Quaternion.identity; // 외형 기본 회전 기억
         magazineHome = magazine != null ? magazine.localPosition : Vector3.zero; // 탄창 원점 기억
+        flashScale = muzzleFlash != null ? muzzleFlash.transform.localScale : Vector3.one; // 원래 총구 섬광 크기 저장
         poseCaptured = true; // 초기 외형 저장 완료
         audioSource = gameObject.AddComponent<AudioSource>(); // 총기 전용 임시 소리 연결
         audioSource.playOnAwake = false; // 장착 시 자동 소리 방지
@@ -54,18 +84,24 @@ public sealed class FirearmView : MonoBehaviour // 권총 반동과 재장전 �
         }
     }
 
-    public void ShowShot() // 발사 시각과 소리 피드백
+    public void ShowShot() // 이전 발사 호출 호환
+    {
+        ShowShot(1f); // 기본 음량 발사 표시
+    }
+
+    public void ShowShot(float volumeScale) // 소음기 음량과 총구 피드백
     {
         recoil = 1f; // 반동 시작
         flashUntil = Time.time + 0.045f; // 짧은 발광 시간 지정
         if (muzzleFlash != null) // 효과 참조 확인
         {
+            muzzleFlash.transform.localScale = flashScale * (suppressed ? 0.4f : 1f); // 소음기 섬광 축소
             muzzleFlash.SetActive(true); // 발사 프레임 즉시 표시
         }
 
         if (audioSource != null && generatedClip != null) // 효과음 준비 확인
         {
-            audioSource.PlayOneShot(generatedClip); // 검증용 전자 발사음 재생
+            audioSource.PlayOneShot(generatedClip, Mathf.Clamp01(volumeScale)); // 검증용 전자 발사음 재생
         }
     }
 

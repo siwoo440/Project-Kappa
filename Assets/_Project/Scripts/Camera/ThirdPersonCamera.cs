@@ -24,6 +24,12 @@ public sealed class ThirdPersonCamera : MonoBehaviour // 3인칭 카메라 관�
     [SerializeField] private float minimumDistance = 0.65f; // 최소 카메라 거리
     [SerializeField] private LayerMask collisionMask = ~0; // 카메라 충돌 마스크
 
+    private Vector2 shotRecoil; // 입력 각도와 분리된 사격 반동
+    private float shotRecoilRate = 2f; // 초당 반동 복귀 도수
+    private float recoilRecoveryAt; // 반동 복귀 시작 시각
+    private float lookMultiplier = 1f; // 조준 감도 비율
+    public Vector2 ShotRecoil => shotRecoil; // 반동 검사 자료
+
     private InputAction lookAction; // 시점 입력 액션
     private float yaw; // 현재 좌우 각도
     private float pitch = 15f; // 현재 상하 각도
@@ -51,6 +57,8 @@ public sealed class ThirdPersonCamera : MonoBehaviour // 3인칭 카메라 관�
 
     private void OnDisable() // 비활성화 처리
     {
+        ResetShotRecoil(); // 비활성화 시 반동 잔류 제거
+        SetLookMultiplier(1f); // 조준 감도 복원
         UnlockCursor(); // 마우스 커서 해제
     }
 
@@ -68,7 +76,15 @@ public sealed class ThirdPersonCamera : MonoBehaviour // 3인칭 카메라 관�
         }
 
         currentRoll = Mathf.Lerp(currentRoll, targetRoll, Time.deltaTime * rollSmoothSpeed); // 롤 보간 적용
-        Quaternion orbitRotation = Quaternion.Euler(pitch, yaw, currentRoll); // 카메라 회전 계산
+        if (Time.time >= recoilRecoveryAt) // 반동 복귀 지연 종료 확인
+        {
+            float elapsed = Mathf.Min(Time.deltaTime, Time.time - recoilRecoveryAt); // 지연 경계 프레임 보정
+            shotRecoil.x = FirearmHandlingMath.Recover(shotRecoil.x, elapsed, shotRecoilRate); // 위쪽 반동 회복
+            shotRecoil.y = FirearmHandlingMath.Recover(shotRecoil.y, elapsed, shotRecoilRate); // 좌우 반동 회복
+        }
+
+        float renderPitch = Mathf.Clamp(pitch - shotRecoil.x, minPitch, maxPitch); // 기본 시점에만 반동 보정 추가
+        Quaternion orbitRotation = Quaternion.Euler(renderPitch, yaw + shotRecoil.y, currentRoll); // 벽 달리기 롤을 유지한 최종 시점
         Vector3 pivotPosition = target.position + pivotOffset; // 카메라 중심 위치 계산
         Vector3 backwardDirection = orbitRotation * Vector3.back; // 카메라 후방 방향 계산
         float collisionDistance = GetCollisionDistance(pivotPosition, backwardDirection); // 충돌 보정 거리 계산
@@ -89,6 +105,25 @@ public sealed class ThirdPersonCamera : MonoBehaviour // 3인칭 카메라 관�
     public void SetAdditionalRoll(float roll) // 카메라 추가 롤 지정
     {
         targetRoll = roll; // 목표 롤 저장
+    }
+
+    public void AddShotRecoil(Vector2 kick, Vector2 limits, float rate, float delay) // 실제 발사 시 조준 반동 누적
+    {
+        shotRecoil.x = Mathf.Clamp(shotRecoil.x + kick.x, 0f, Mathf.Max(0f, limits.x)); // 수직 반동 한도 적용
+        shotRecoil.y = Mathf.Clamp(shotRecoil.y + kick.y, -Mathf.Max(0f, limits.y), Mathf.Max(0f, limits.y)); // 좌우 반동 한도 적용
+        shotRecoilRate = Mathf.Max(0f, rate); // 현재 총기 복귀 속도 저장
+        recoilRecoveryAt = Time.time + Mathf.Max(0f, delay); // 연속 사격 시 복귀 대기 갱신
+    }
+
+    public void ResetShotRecoil() // 장착 해제와 특수행동의 반동 정리
+    {
+        shotRecoil = Vector2.zero; // 사격 보정만 초기화
+        recoilRecoveryAt = 0f; // 복귀 대기 해제
+    }
+
+    public void SetLookMultiplier(float multiplier) // 기본 감도를 바꾸지 않는 조준 감도 적용
+    {
+        lookMultiplier = Mathf.Clamp(multiplier, 0.1f, 1f); // 유효한 감도 비율 저장
     }
 
     private void ResolveLookAction() // 시점 입력 연결
@@ -115,13 +150,13 @@ public sealed class ThirdPersonCamera : MonoBehaviour // 3인칭 카메라 관�
 
         if (gamepadInput) // 게임패드 입력 처리
         {
-            yaw += lookInput.x * gamepadLookSpeed * Time.deltaTime; // 게임패드 좌우 회전 적용
-            pitch -= lookInput.y * gamepadLookSpeed * Time.deltaTime; // 게임패드 상하 회전 적용
+            yaw += lookInput.x * gamepadLookSpeed * lookMultiplier * Time.deltaTime; // 게임패드 좌우 회전 적용
+            pitch -= lookInput.y * gamepadLookSpeed * lookMultiplier * Time.deltaTime; // 게임패드 상하 회전 적용
         }
         else // 마우스 입력 처리
         {
-            yaw += lookInput.x * mouseSensitivity; // 마우스 좌우 회전 적용
-            pitch -= lookInput.y * mouseSensitivity; // 마우스 상하 회전 적용
+            yaw += lookInput.x * mouseSensitivity * lookMultiplier; // 마우스 좌우 회전 적용
+            pitch -= lookInput.y * mouseSensitivity * lookMultiplier; // 마우스 상하 회전 적용
         }
 
         pitch = Mathf.Clamp(pitch, minPitch, maxPitch); // 상하 회전 범위 제한

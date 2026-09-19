@@ -26,6 +26,18 @@ public sealed class DetectionSensor : MonoBehaviour // 시야 청각 탐지 센�
     private EnemyStatusController status; // 마비 상태 참조
     private Transform SightSource => visionSource != null ? visionSource : transform; // 시야 기준 선택
     public Transform Target => target; // AI 대상 복원용 참조
+    [SerializeField, Min(0f)] private float gunshotHoldTime = 4f; // 총성 조사 유지 시간
+    [SerializeField, Range(0f, 0.99f)] private float gunshotSuspicion = 0.65f; // 총성의 부분 의심치
+    private Vector3 lastHeardPosition; // 마지막으로 들은 소음 발생 위치
+    private float lastHeardAt = float.NegativeInfinity; // 청취 시각
+    private float lastGunshotAt = float.NegativeInfinity; // 마지막 총성 청취 시각
+    public float LastGunshotAt => lastGunshotAt; // 총성 표시등 시각 조회
+    private int gunshotsHeard; // 검사 중 실제 들은 총성 수
+    public Vector3 LastHeardPosition => lastHeardPosition; // 고정 소음 위치 검사
+    public float LastHeardAt => lastHeardAt; // 청각 반응 검사
+    public int GunshotsHeard => gunshotsHeard; // 총성 반응 횟수 조회
+    public float HearingRadius => hearingRadius; // 실제 청각 반경 조회
+
     private DetectionState state; // 현재 탐지 상태
     private float detectionProgress; // 현재 탐지 진행도
     private float suspicionTimer; // 의심 유지 시간
@@ -142,16 +154,25 @@ public sealed class DetectionSensor : MonoBehaviour // 시야 청각 탐지 센�
         }
 
         float distance = Vector3.Distance(transform.position, noiseEvent.Position); // 소음 거리 계산
-        float audibleDistance = Mathf.Min(hearingRadius, noiseEvent.Radius); // 실제 청취 거리 계산
-        if (distance > audibleDistance) // 청취 범위 확인
+        if (!FirearmHandlingMath.CanHear(distance, hearingRadius, noiseEvent.Radius)) // 실제 청각과 발사 소음 반경 검사
         {
             return; // 소음 처리 중단
         }
 
-        lastKnownPosition = noiseEvent.Position; // 마지막 위치 갱신
+        lastHeardPosition = noiseEvent.Position; // Source의 현재 위치 대신 발사 시점 위치 보존
+        lastHeardAt = Time.time; // 실제 청취 시각 저장
+        bool gunshot = noiseEvent.Type == NoiseType.Gunshot; // 총성과 일반 소음 구분
+        if (gunshot) // 총성 청취 확인
+        {
+            gunshotsHeard++; // 소음기 비교용 반응 횟수 기록
+            lastGunshotAt = Time.time; // 총성만 별도로 시각 기록
+        }
+
+        lastKnownPosition = noiseEvent.Position; // 실제로 소리가 발생했던 위치만 조사
         hasLastKnownPosition = true; // 마지막 위치 존재 설정
-        suspicionTimer = suspicionHoldTime; // 의심 유지 시간 설정
-        detectionProgress = Mathf.Max(detectionProgress, hearingSuspicionAmount); // 탐지 진행도 최소 의심치 적용
+        suspicionTimer = gunshot ? Mathf.Max(suspicionHoldTime, gunshotHoldTime) : suspicionHoldTime; // 총성은 더 오래 조사
+        float amount = gunshot ? gunshotSuspicion : hearingSuspicionAmount; // 소음 종류별 의심 수치
+        detectionProgress = Mathf.Max(detectionProgress, Mathf.Clamp(amount, 0f, 0.99f)); // 소리만으로 완전 발견에 도달하지 않도록 제한
 
         if (state != DetectionState.Detected) // 발견 상태 여부 확인
         {

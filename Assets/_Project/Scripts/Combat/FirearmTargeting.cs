@@ -2,7 +2,12 @@ using UnityEngine; // 물리 충돌과 카메라 조준 기능
 
 public static class FirearmTargeting // 총구 기준 실제 명중 판정
 {
-    public static bool CastShot(Camera camera, Transform owner, Vector3 muzzle, float range, int mask, out RaycastHit hit, out Vector3 endpoint, out bool muzzleBlocked) // 화면 조준과 총구 경로 통합 검사
+    public static bool CastShot(Camera camera, Transform owner, Vector3 muzzle, float range, int mask, out RaycastHit hit, out Vector3 endpoint, out bool muzzleBlocked) // 기존 호출 호환
+    {
+        return CastShot(camera, owner, muzzle, range, mask, Vector2.zero, out hit, out endpoint, out muzzleBlocked); // 이전 정중앙 판정 유지
+    }
+
+    public static bool CastShot(Camera camera, Transform owner, Vector3 muzzle, float range, int mask, Vector2 viewportOffset, out RaycastHit hit, out Vector3 endpoint, out bool muzzleBlocked) // 분산과 총구 경로 통합 검사
     {
         hit = default; // 명중 정보 초기화
         muzzleBlocked = false; // 총구 막힘 초기화
@@ -27,7 +32,7 @@ public static class FirearmTargeting // 총구 기준 실제 명중 판정
             }
         }
 
-        Ray aimRay = camera != null ? camera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f)) : new Ray(body, owner.forward); // 화면 중앙 조준선
+        Ray aimRay = camera != null ? camera.ViewportPointToRay(new Vector3(0.5f + viewportOffset.x, 0.5f + viewportOffset.y, 0f)) : new Ray(body, owner.forward); // 화면 중앙 조준선
         Vector3 aimPoint = aimRay.origin + aimRay.direction * (range + Vector3.Distance(aimRay.origin, muzzle)); // 조준 실패 시 끝점
         if (ClosestHit(aimRay.origin, aimRay.direction, range + Vector3.Distance(aimRay.origin, muzzle), owner, mask, out RaycastHit cameraHit)) // 카메라 앞 가장 가까운 조준 대상
         {
