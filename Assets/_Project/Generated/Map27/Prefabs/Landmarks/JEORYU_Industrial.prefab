@@ -42,7 +42,6 @@ GameObject:
   m_Component:
   - component: {fileID: 8294282638474222387}
   - component: {fileID: 8830800530842014614}
-  - component: {fileID: 6289338402881690481}
   m_Layer: 0
   m_Name: JEORYU_Industrial
   m_TagString: Untagged
@@ -88,24 +87,6 @@ MonoBehaviour:
   placeId: JEORYU_GATE
   displayName: "\uC800\uB958 \uC0B0\uC5C5\uC9C0\uAD6C"
   arrival: {fileID: 3431949743103742579}
---- !u!114 &6289338402881690481
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1595980580881814993}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectK.Day27.Map27PrefabElement
-  kind: 8
-  buildingClass: 0
-  width: 52.5
-  depth: 55.618042
-  height: 14
-  sourceName: JEORYU_Industrial
 --- !u!1 &2453062763284875520
 GameObject:
   m_ObjectHideFlags: 0

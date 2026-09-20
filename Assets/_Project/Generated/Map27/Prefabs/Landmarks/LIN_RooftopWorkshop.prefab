@@ -1905,7 +1905,6 @@ GameObject:
   m_Component:
   - component: {fileID: 2351741043275523068}
   - component: {fileID: 300359258949138432}
-  - component: {fileID: 1757450137403571088}
   m_Layer: 0
   m_Name: LIN_RooftopWorkshop
   m_TagString: Untagged
@@ -1960,24 +1959,6 @@ MonoBehaviour:
   placeId: LIN_HOME
   displayName: "\uB9B0\uC758 \uC625\uC0C1 \uC791\uC5C5\uC2E4"
   arrival: {fileID: 6937105449856089763}
---- !u!114 &1757450137403571088
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6012557747859244941}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectK.Day27.Map27PrefabElement
-  kind: 8
-  buildingClass: 0
-  width: 31.5
-  depth: 27
-  height: 13.300003
-  sourceName: LIN_RooftopWorkshop
 --- !u!1 &6016649454342067209
 GameObject:
   m_ObjectHideFlags: 0

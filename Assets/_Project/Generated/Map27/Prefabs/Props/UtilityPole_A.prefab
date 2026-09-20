@@ -740,7 +740,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 24144960963875669}
-  - component: {fileID: 8363910758920802838}
   m_Layer: 0
   m_Name: UtilityPole_A
   m_TagString: Untagged
@@ -771,24 +770,6 @@ Transform:
   - {fileID: 5321665383529031066}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8363910758920802838
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8226224463889881683}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectK.Day27.Map27PrefabElement
-  kind: 6
-  buildingClass: 0
-  width: 117.21678
-  depth: 126.71118
-  height: 14.099999
-  sourceName: UtilityPole
 --- !u!1 &8951534867414731931
 GameObject:
   m_ObjectHideFlags: 0

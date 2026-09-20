@@ -121,7 +121,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6891502685908706482}
-  - component: {fileID: 5231890164611582694}
   m_Layer: 0
   m_Name: Building_Mid_03
   m_TagString: Untagged
@@ -146,24 +145,6 @@ Transform:
   - {fileID: 8768248268540158075}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5231890164611582694
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1777052325467094330}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectK.Day27.Map27PrefabElement
-  kind: 0
-  buildingClass: 2
-  width: 41.27369
-  depth: 29.398705
-  height: 37.06147
-  sourceName: Building_East
 --- !u!1 &5629931093563686210
 GameObject:
   m_ObjectHideFlags: 0

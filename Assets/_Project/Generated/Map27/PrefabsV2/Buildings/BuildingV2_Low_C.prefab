@@ -189,7 +189,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3911285586279378842}
-  - component: {fileID: 8997386020179827447}
   m_Layer: 0
   m_Name: BuildingV2_Low_C
   m_TagString: Untagged
@@ -230,24 +229,6 @@ Transform:
   - {fileID: 112714321916311522}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8997386020179827447
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 976189028776532981}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectK.Day27.Map27PrefabElement
-  kind: 0
-  buildingClass: 1
-  width: 17
-  depth: 25.8
-  height: 19
-  sourceName: BuildingV2_Low_C
 --- !u!1 &1509046566102348229
 GameObject:
   m_ObjectHideFlags: 0

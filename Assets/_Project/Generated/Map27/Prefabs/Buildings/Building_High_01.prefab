@@ -9,7 +9,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5574152776285262011}
-  - component: {fileID: 8117061643530947621}
   m_Layer: 0
   m_Name: Building_High_01
   m_TagString: Untagged
@@ -34,24 +33,6 @@ Transform:
   - {fileID: 1568616440155533662}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8117061643530947621
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1710168558296277287}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectK.Day27.Map27PrefabElement
-  kind: 0
-  buildingClass: 3
-  width: 52.281548
-  depth: 35.970413
-  height: 62.43284
-  sourceName: Building_D27_03
 --- !u!1 &2099780315098454085
 GameObject:
   m_ObjectHideFlags: 0

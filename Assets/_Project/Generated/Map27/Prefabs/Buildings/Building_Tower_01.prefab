@@ -121,7 +121,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7362151371472551913}
-  - component: {fileID: 4456740628976519100}
   m_Layer: 0
   m_Name: Building_Tower_01
   m_TagString: Untagged
@@ -146,24 +145,6 @@ Transform:
   - {fileID: 4146308741409949479}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4456740628976519100
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2926574584524608983}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectK.Day27.Map27PrefabElement
-  kind: 0
-  buildingClass: 4
-  width: 43.005924
-  depth: 49.702797
-  height: 99.640656
-  sourceName: Building_West
 --- !u!1 &5759389574303075259
 GameObject:
   m_ObjectHideFlags: 0

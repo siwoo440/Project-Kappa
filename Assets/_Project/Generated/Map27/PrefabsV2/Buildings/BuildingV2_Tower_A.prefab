@@ -571,7 +571,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8075547127656393880}
-  - component: {fileID: 5650298028802285811}
   m_Layer: 0
   m_Name: BuildingV2_Tower_A
   m_TagString: Untagged
@@ -648,24 +647,6 @@ Transform:
   - {fileID: 229510684776959760}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5650298028802285811
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1502391739746140786}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectK.Day27.Map27PrefabElement
-  kind: 0
-  buildingClass: 4
-  width: 25
-  depth: 25.8
-  height: 90
-  sourceName: BuildingV2_Tower_A
 --- !u!1 &2979284557411927923
 GameObject:
   m_ObjectHideFlags: 0

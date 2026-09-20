@@ -119,7 +119,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7844811267564735627}
-  - component: {fileID: 4051280248238632493}
   m_Layer: 0
   m_Name: VendingMachine_A
   m_TagString: Untagged
@@ -145,24 +144,6 @@ Transform:
   - {fileID: 7732661742319913718}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4051280248238632493
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1877152984765882656}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectK.Day27.Map27PrefabElement
-  kind: 4
-  buildingClass: 0
-  width: 373.89
-  depth: 31.795
-  height: 18.550001
-  sourceName: VendingMachine
 --- !u!1 &5720633938033201906
 GameObject:
   m_ObjectHideFlags: 0

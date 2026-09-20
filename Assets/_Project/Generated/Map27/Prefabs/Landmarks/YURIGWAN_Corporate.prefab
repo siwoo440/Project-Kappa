@@ -42,7 +42,6 @@ GameObject:
   m_Component:
   - component: {fileID: 6911261161105376254}
   - component: {fileID: 3505009163543001897}
-  - component: {fileID: 3613024705820711156}
   m_Layer: 0
   m_Name: YURIGWAN_Corporate
   m_TagString: Untagged
@@ -86,24 +85,6 @@ MonoBehaviour:
   placeId: YURIGWAN_PLAZA
   displayName: "\uC720\uB9AC\uAD00 \uAE30\uC5C5\uC9C0\uAD6C"
   arrival: {fileID: 5183781414661890226}
---- !u!114 &3613024705820711156
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1407187126324059643}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectK.Day27.Map27PrefabElement
-  kind: 8
-  buildingClass: 0
-  width: 58.940002
-  depth: 57.117996
-  height: 77.2
-  sourceName: YURIGWAN_Corporate
 --- !u!1 &2051534723345513773
 GameObject:
   m_ObjectHideFlags: 0

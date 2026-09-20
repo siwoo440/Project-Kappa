@@ -1791,7 +1791,6 @@ GameObject:
   m_Component:
   - component: {fileID: 682850695345866469}
   - component: {fileID: 8139749203671928113}
-  - component: {fileID: 1009836247488051567}
   m_Layer: 0
   m_Name: GYEOPGIL_Market
   m_TagString: Untagged
@@ -1844,24 +1843,6 @@ MonoBehaviour:
   placeId: GYEOPGIL_PLAZA
   displayName: "\uACB9\uAE38 \uC2DC\uC7A5"
   arrival: {fileID: 6910371994526960432}
---- !u!114 &1009836247488051567
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8934074076312553577}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectK.Day27.Map27PrefabElement
-  kind: 8
-  buildingClass: 0
-  width: 31.5
-  depth: 51.11801
-  height: 9.200001
-  sourceName: GYEOPGIL_Market
 --- !u!1 &9172983175123035165
 GameObject:
   m_ObjectHideFlags: 0

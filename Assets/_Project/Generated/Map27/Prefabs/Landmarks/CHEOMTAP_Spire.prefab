@@ -283,7 +283,6 @@ GameObject:
   m_Component:
   - component: {fileID: 3271012256821092219}
   - component: {fileID: 8918926088140428678}
-  - component: {fileID: 8105005760580570500}
   m_Layer: 0
   m_Name: CHEOMTAP_Spire
   m_TagString: Untagged
@@ -328,24 +327,6 @@ MonoBehaviour:
   placeId: CHEOMTAP_APPROACH
   displayName: "\uCCA8\uD0D1 \uC678\uACFD \uAD11\uC7A5"
   arrival: {fileID: 1857921892775452886}
---- !u!114 &8105005760580570500
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 926070982614494566}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectK.Day27.Map27PrefabElement
-  kind: 8
-  buildingClass: 0
-  width: 35
-  depth: 58.618042
-  height: 142
-  sourceName: CHEOMTAP_Spire
 --- !u!1 &3766120341688910629
 GameObject:
   m_ObjectHideFlags: 0

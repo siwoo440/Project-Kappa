@@ -301,7 +301,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 150840620721907462}
-  - component: {fileID: 8477089851299073006}
   m_Layer: 0
   m_Name: RoadStreetLight_A
   m_TagString: Untagged
@@ -329,24 +328,6 @@ Transform:
   - {fileID: 6026932493540431669}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8477089851299073006
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5948420485878162383}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectK.Day27.Map27PrefabElement
-  kind: 2
-  buildingClass: 0
-  width: 180.84999
-  depth: 220.9
-  height: 25.021954
-  sourceName: StreetLight
 --- !u!1 &6831715702136492532
 GameObject:
   m_ObjectHideFlags: 0

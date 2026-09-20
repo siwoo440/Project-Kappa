@@ -9,7 +9,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4439597088086665271}
-  - component: {fileID: 2485901170266502613}
   m_Layer: 0
   m_Name: ServiceFurniture_01
   m_TagString: Untagged
@@ -34,24 +33,6 @@ Transform:
   - {fileID: 6488670737639063753}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2485901170266502613
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5768250129689289480}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectK.Day27.Map27PrefabElement
-  kind: 3
-  buildingClass: 0
-  width: 8.3
-  depth: 29.830399
-  height: 1.6
-  sourceName: ServiceFurniture
 --- !u!1 &5891744580185470565
 GameObject:
   m_ObjectHideFlags: 0
