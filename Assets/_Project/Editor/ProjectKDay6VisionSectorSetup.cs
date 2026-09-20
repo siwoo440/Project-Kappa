@@ -26,7 +26,7 @@ public static class ProjectKDay6VisionSectorSetup // 감시 영역 자동 구성
         EditorApplication.delayCall += ApplySetup; // 지연 실행 등록
     }
 
-    [MenuItem("Project K/Day 6/Setup Vision Sector Visuals")] // 메뉴 항목 등록
+    // 메뉴 항목 등록
     public static void ApplySetup() // 감시 영역 적용
     {
         Scene scene = SceneManager.GetSceneByPath(TestScenePath); // 테스트 씬 조회

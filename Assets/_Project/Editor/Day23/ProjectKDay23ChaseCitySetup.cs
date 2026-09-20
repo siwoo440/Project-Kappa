@@ -30,7 +30,7 @@ public static class ProjectKDay23ChaseCitySetup // Day23 배치 교정과 실제
     private static int alleyCount; // 안전 배치 골목 집계
     private static int subwayPropCount; // 지하 공간 소품 집계
 
-    [MenuItem("Project K/Day 23/Fix Layout And Build Terrain Subway")] // 실제 교정 메뉴
+    // 실제 교정 메뉴
     public static void Apply() // 현재 Day23 확장을 제거하고 안전 배치로 다시 생성
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) // 안전한 편집 시점 확인

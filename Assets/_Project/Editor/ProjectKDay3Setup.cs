@@ -31,7 +31,7 @@ public static class ProjectKDay3Setup // 3일차 자동 구성 도구
         EditorApplication.delayCall += ApplyDay3Setup; // 컴파일 종료 후 적용 예약
     }
 
-    [MenuItem("Project K/Day 3/Setup Parkour Training Ground")] // 수동 구성 메뉴
+    // 수동 구성 메뉴
     public static void ApplyDay3Setup() // 3일차 구성 적용
     {
         int parkourLayer = EnsureLayer(ParkourLayerName); // 파쿠르 레이어 확보

@@ -15,7 +15,7 @@ public static class ProjectKDay13Setup // 이전 훈련장을 지우지 않는 �
     private const string InputPath = "Assets/InputSystem_Actions.inputactions"; // 기존 입력 파일
     private static bool applying; // 메뉴 중복 실행 잠금
 
-    [MenuItem("Project K/Day 13/Setup Expanded Training Campus")] // 이번 일차 수동 설치
+    // 이번 일차 수동 설치
     public static void ApplySetup() // 총기와 확장 맵 동시 구성
     {
         if (applying || EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) // 안전한 편집 상태 확인

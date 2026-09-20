@@ -26,7 +26,7 @@ public static class ProjectKDay4VisualUpgrade // 훈련장 시각 강화 도구
         EditorApplication.delayCall += UpgradeVisuals; // 지연 실행 등록
     }
 
-    [MenuItem("Project K/Day 4/Upgrade Training Ground Visuals")] // 메뉴 항목 등록
+    // 메뉴 항목 등록
     public static void UpgradeVisuals() // 시각 업그레이드 적용
     {
         Scene testScene = SceneManager.GetSceneByPath(TestScenePath); // 테스트 씬 조회

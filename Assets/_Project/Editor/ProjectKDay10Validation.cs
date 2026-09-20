@@ -11,7 +11,7 @@ public static class ProjectKDay10Validation // 설정과 탄약 상태 검증 �
 {
     private static int assertions; // 이번 실행 검사 수
 
-    [MenuItem("Project K/Day 10/Validate Pistol Setup")] // 설정 검증 메뉴
+    // 설정 검증 메뉴
     public static void ValidateSetup() // 씬 변경 없이 참조와 탄약 규칙 검사
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling) // 안정된 에디터 상태 확인
@@ -70,7 +70,7 @@ public static class ProjectKDay10Validation // 설정과 탄약 상태 검증 �
         }
     }
 
-    [MenuItem("Project K/Day 10/Test Ammo Rules")] // 씬 없이 실행 가능한 탄약 검사
+    // 씬 없이 실행 가능한 탄약 검사
     public static void TestAmmoRules() // 순수 C# 상태 규칙 검사
     {
         assertions = 0; // 검사 수 초기화

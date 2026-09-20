@@ -15,7 +15,7 @@ public static class ProjectKDay20CityLifeSetup // Map 씬에 차량과 시민 �
     public const string SourceCommit = "010a637b837f0743dd5851d34c942a93975453ad"; // 19일차 완료 기준 최신 커밋
     private static bool applying; // 중복 설치 방지
 
-    [MenuItem("Project K/Day 20/Setup Traffic And Citizens")] // 실제 설치 메뉴
+    // 실제 설치 메뉴
     public static void Apply() // 프리팹 생성 후 Map 씬에 관리자 연결
     {
         if (applying || EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) // 안전한 편집 시점 확인

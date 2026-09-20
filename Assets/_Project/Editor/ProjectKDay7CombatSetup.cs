@@ -26,7 +26,7 @@ public static class ProjectKDay7CombatSetup // 7일차 암살 전투 자동 구�
         EditorApplication.delayCall += ApplySetup; // 컴파일 후 구성 예약
     }
 
-    [MenuItem("Project K/Day 7/Setup Assassination And Combat")] // 수동 구성 메뉴
+    // 수동 구성 메뉴
     public static void ApplySetup() // 암살 전투 구성 적용
     {
         Scene scene = SceneManager.GetSceneByPath(TestScenePath); // 테스트 씬 조회

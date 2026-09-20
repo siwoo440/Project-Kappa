@@ -12,7 +12,7 @@ public static class ProjectKDay15Setup // 통합 맵을 재생성하지 않는 �
     public const string RootName = "Day15_BalanceLab"; // 중복 생성 식별자
     private static bool applying; // 중복 실행 차단
 
-    [MenuItem("Project K/Day 15/Setup Balance Lab")] // 명시적인 설치 메뉴
+    // 명시적인 설치 메뉴
     public static void Setup() // 기존 센터에 계측만 추가
     {
         if (applying || EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) // 안전한 편집 시점 확인

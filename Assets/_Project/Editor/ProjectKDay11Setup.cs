@@ -16,7 +16,7 @@ public static class ProjectKDay11Setup // 기존 총기를 확장하는 수동 �
     public const string DataFolder = "Assets/_Project/Data/Day11"; // 사격 조정 자료 폴더
     private static bool applying; // 같은 설정의 중복 실행 방지
 
-    [MenuItem("Project K/Day 11/Setup Recoil Spread And Suppressor")] // 11일차 적용 메뉴
+    // 11일차 적용 메뉴
     public static void ApplySetup() // 사격 설정과 추가 훈련장 연결
     {
         if (applying || EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) // 안전한 편집 시점 확인

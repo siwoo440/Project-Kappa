@@ -35,7 +35,7 @@ namespace ProjectK.Day16 // 본편 Map 전용 이름 공간
             513 // 정밀 표본
         };
 
-        [MenuItem("Project K/Day 16/Create Map - 3x3 Terrain")] // 독립 월드 생성 진입
+        // 독립 월드 생성 진입
         public static void Open() // 설정 창 표시
         {
             MapBuildWindow window = GetWindow<MapBuildWindow>("Map / 3x3 Terrain"); // 단일 설정 창

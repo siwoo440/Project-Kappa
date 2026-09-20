@@ -20,7 +20,7 @@ public static class ProjectKDay8SceneViewCleanup // Scene View 아이콘 정리 
         EditorApplication.delayCall += HidePlayerInputIcon; // 아이콘 정리 예약
     }
 
-    [MenuItem("Project K/Day 8/Hide PlayerInput Scene Icon")] // 수동 정리 메뉴
+    // 수동 정리 메뉴
     public static void HidePlayerInputIcon() // PlayerInput Scene 아이콘 숨김
     {
         Type annotationUtilityType = typeof(Editor).Assembly.GetType("UnityEditor.AnnotationUtility"); // AnnotationUtility 형식 조회

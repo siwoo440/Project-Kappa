@@ -14,7 +14,7 @@ public static class ProjectKDay18StreetPolishFix // 잘못된 Day19 표기와 �
     private const string LegacyRoot = "Day19_UrbanPolishLayer"; // 이전 잘못된 일차의 씬 루트
     private static bool applying; // 메뉴 중복 실행 방지
 
-    [MenuItem("Project K/Day 18/Repair Signs And Streetscape")] // 현재 18일차 보정 메뉴
+    // 현재 18일차 보정 메뉴
     public static void Apply() // 백업 후 기존 19일차 루트를 교체하고 거리 보정
     {
         if (applying || EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) // 안전한 편집 시점 확인
@@ -84,7 +84,7 @@ public static class ProjectKDay18StreetPolishFix // 잘못된 Day19 표기와 �
         }
     }
 
-    [MenuItem("Project K/Day 18/Cleanup Legacy Day19 Code")] // 자동 정리가 실패했을 때 사용할 수동 메뉴
+    // 자동 정리가 실패했을 때 사용할 수동 메뉴
     public static void CleanupLegacyDay19Code() // 잘못된 일차 코드 폴더만 제거
     {
         CleanupLegacyDay19(); // 공통 정리 실행

@@ -14,7 +14,7 @@ public static class ProjectKDay18DensitySetup // 기존 도시를 유지한 밀�
     public const string MapScenePath = "Assets/_Project/Scenes/Map.unity"; // 대상 본편 씬 경로
     private static bool applying; // 메뉴 중복 실행 방지
 
-    [MenuItem("Project K/Day 18/Increase Urban Density")] // 실제 도시 밀도 보강 메뉴
+    // 실제 도시 밀도 보강 메뉴
     public static void Apply() // 백업 후 밀도 레이어 생성
     {
         if (applying || EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) // 안전한 편집 시점 확인

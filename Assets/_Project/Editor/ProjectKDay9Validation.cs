@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement; // 씬 조회 기능
 
 public static class ProjectKDay9Validation // 장비 설정과 계산 검사
 {
-    [MenuItem("Project K/Day 9/Validate Equipment Setup")] // 수동 검사 메뉴
+    // 수동 검사 메뉴
     public static void ValidateSetup() // 데이터와 씬 연결 검사
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling) // 실행 상태 확인

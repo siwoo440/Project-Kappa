@@ -28,7 +28,7 @@ public static class ProjectKDay2Setup // 2일차 자동 구성 도구
         EditorApplication.delayCall += ApplyDay2Setup; // 컴파일 종료 후 적용 예약
     }
 
-    [MenuItem("Project K/Day 2/Setup Movement and Camera")] // 수동 구성 메뉴
+    // 수동 구성 메뉴
     public static void ApplyDay2Setup() // 2일차 구성 적용
     {
         InputActionAsset inputAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(InputAssetPath); // 입력 에셋 조회

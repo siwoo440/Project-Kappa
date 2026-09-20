@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement; // 활성 Map 씬 확인
 
 public static class ProjectKDay19MapUIValidation // M 지도와 N 미니맵 구성 검사
 {
-    [MenuItem("Project K/Day 19/Validate World Map And Minimap")] // 실제 씬 검사 메뉴
+    // 실제 씬 검사 메뉴
     public static void ValidateMenu() // 활성 Map 지도 UI 검사
     {
         Scene scene = SceneManager.GetActiveScene(); // 현재 활성 씬 조회
@@ -35,7 +35,7 @@ public static class ProjectKDay19MapUIValidation // M 지도와 N 미니맵 구�
         }
     }
 
-    [MenuItem("Project K/Day 19/Test Map UI Rules")] // 좌표와 크기 빠른 검사 메뉴
+    // 좌표와 크기 빠른 검사 메뉴
     public static void RuleTestMenu() // 동일한 검사 재사용
     {
         ValidateMenu(); // 실제 지도 UI 검사 실행

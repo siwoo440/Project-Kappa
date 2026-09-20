@@ -26,7 +26,7 @@ public static class ProjectKDay7DirectionIndicatorSetup // 방향 표시 자동 
         EditorApplication.delayCall += ApplySetup; // 컴파일 종료 후 설정 예약
     }
 
-    [MenuItem("Project K/Day 7/Setup Player Direction Indicator")] // 수동 설정 메뉴
+    // 수동 설정 메뉴
     public static void ApplySetup() // 방향 표시 설정 적용
     {
         Scene scene = SceneManager.GetSceneByPath(TestScenePath); // 테스트 씬 조회

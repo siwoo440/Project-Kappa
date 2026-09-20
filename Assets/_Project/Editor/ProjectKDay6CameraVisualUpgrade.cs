@@ -26,7 +26,7 @@ public static class ProjectKDay6CameraVisualUpgrade // D-01 카메라 시각 강
         EditorApplication.delayCall += ApplySetup; // 지연 실행 등록
     }
 
-    [MenuItem("Project K/Day 6/Upgrade D-01 Camera Visuals")] // 메뉴 항목 등록
+    // 메뉴 항목 등록
     public static void ApplySetup() // D-01 카메라 적용
     {
         Scene scene = SceneManager.GetSceneByPath(TestScenePath); // 테스트 씬 조회

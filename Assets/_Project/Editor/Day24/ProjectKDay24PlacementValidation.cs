@@ -13,7 +13,7 @@ public static class ProjectKDay24PlacementValidation // Day23 지상 요소 높�
     private const string MapScenePath = "Assets/_Project/Scenes/Map.unity"; // 대상 Map 씬 경로
     private const string BackupFolder = "Assets/_Project/Backups/Day24"; // Day24 검수 전 백업 폴더
 
-    [MenuItem("Project K/Day 24/Validate And Fix Surface Placement")] // 지상 자동 보정 메뉴
+    // 지상 자동 보정 메뉴
     public static void ValidateAndFix() // 공중 건물·가로등·골목 루트 Terrain 높이 보정
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) // 안전한 편집 시점 확인

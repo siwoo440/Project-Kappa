@@ -27,7 +27,7 @@ public static class ProjectKDay1Setup // 1일차 자동 구성 도구
         EditorApplication.delayCall += AutoSetup; // 컴파일 종료 후 실행 예약
     }
 
-    [MenuItem("Project K/Day 1/Setup Project")] // 수동 구성 메뉴
+    // 수동 구성 메뉴
     public static void SetupProject() // 전체 프로젝트 구성
     {
         EnsureFolderStructure(); // 폴더 구조 생성

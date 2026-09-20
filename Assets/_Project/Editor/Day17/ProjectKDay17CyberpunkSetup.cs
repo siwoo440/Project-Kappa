@@ -13,7 +13,7 @@ public static class ProjectKDay17CyberpunkSetup // 16일차 Map 위에 사이버
     public const string MapScenePath = "Assets/_Project/Scenes/Map.unity"; // 대상 본편 씬 경로
     private static bool applying; // 중복 메뉴 실행 방지
 
-    [MenuItem("Project K/Day 17/Enhance Map Cyberpunk City")] // 17일차 실제 설치 메뉴
+    // 17일차 실제 설치 메뉴
     public static void Enhance() // 백업 후 네온 도시 디테일 추가
     {
         if (applying || EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) // 안전한 편집 시점 확인

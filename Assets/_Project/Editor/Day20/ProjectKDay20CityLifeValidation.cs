@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement; // 활성 Map 씬 확인
 
 public static class ProjectKDay20CityLifeValidation // 차량·보행 그래프와 풀 구성 검사
 {
-    [MenuItem("Project K/Day 20/Validate Traffic And Citizens")] // 실제 씬 검사 메뉴
+    // 실제 씬 검사 메뉴
     public static void ValidateMenu() // 활성 Map의 도시 생활 구성 검사
     {
         Scene scene = SceneManager.GetActiveScene(); // 현재 활성 씬 조회
@@ -34,7 +34,7 @@ public static class ProjectKDay20CityLifeValidation // 차량·보행 그래프�
         }
     }
 
-    [MenuItem("Project K/Day 20/Test City Life Rules")] // 그래프 수학과 경계 규칙 검사 메뉴
+    // 그래프 수학과 경계 규칙 검사 메뉴
     public static void RuleTestMenu() // 씬 관리자 없이도 핵심 규칙 검사
     {
         try // 순수 계산 검사 예외 처리

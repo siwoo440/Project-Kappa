@@ -10,7 +10,7 @@ using UnityEngine.UI; // 실제 게이지 메시
 
 public static class ProjectKDay12GaugeValidation // 체력 변화와 표시 폭 회귀 검사
 {
-    [MenuItem("Project K/Day 12/Test Combat Gauge Rendering")] // 체력바 메시 검사 메뉴
+    // 체력바 메시 검사 메뉴
     public static void TestRendering() // 기존 씬을 변경하지 않는 검사
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) // 안전한 검사 시점 확인

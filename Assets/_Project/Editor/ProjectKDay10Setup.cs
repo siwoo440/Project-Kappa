@@ -18,7 +18,7 @@ public static class ProjectKDay10Setup // 기존 훈련장을 유지하는 권�
     public const string InputPath = "Assets/InputSystem_Actions.inputactions"; // 기존 입력 파일
     private static bool applying; // 설정 재진입 방지
 
-    [MenuItem("Project K/Day 10/Setup Pistol And Reload")] // 10일차 수동 적용 메뉴
+    // 10일차 수동 적용 메뉴
     public static void ApplySetup() // 권총과 입력과 보급대 연결
     {
         if (applying || EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) // 안전한 편집 시점 확인

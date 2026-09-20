@@ -21,6 +21,14 @@ namespace ProjectK.Day21 // 21일차 피해·수배 이름 공간
         GuardKilled // 경비 처치
     }
 
+    public enum MapWantedUnitKind // 수배 대응 병력 종류
+    {
+        Regular, // E-01 일반 경비
+        Elite, // E-02 검술 정예
+        Heavy, // E-03 중장갑 경비
+        SurveillanceDrone // E-04 감시 드론
+    }
+
     public interface IWorldDamageable // 시민·차량 공통 피해 계약
     {
         float CurrentHealth { get; } // 현재 체력 조회
@@ -36,26 +44,11 @@ namespace ProjectK.Day21 // 21일차 피해·수배 이름 공간
 
         public static int StarsForHeat(float heat) // Heat를 0~5성으로 변환
         {
-            if (heat >= 150f) // 최고 수배 기준 확인
-            {
-                return 5; // 오성 반환
-            }
-            if (heat >= 100f) // 사성 기준 확인
-            {
-                return 4; // 사성 반환
-            }
-            if (heat >= 60f) // 삼성 기준 확인
-            {
-                return 3; // 삼성 반환
-            }
-            if (heat >= 30f) // 이성 기준 확인
-            {
-                return 2; // 이성 반환
-            }
-            if (heat >= 10f) // 일성 기준 확인
-            {
-                return 1; // 일성 반환
-            }
+            if (heat >= 150f) return 5; // 오성 반환
+            if (heat >= 100f) return 4; // 사성 반환
+            if (heat >= 60f) return 3; // 삼성 반환
+            if (heat >= 30f) return 2; // 이성 반환
+            if (heat >= 10f) return 1; // 일성 반환
             return 0; // 수배 없음 반환
         }
 
@@ -63,22 +56,14 @@ namespace ProjectK.Day21 // 21일차 피해·수배 이름 공간
         {
             switch (type) // 범죄 종류 분기
             {
-                case CrimeType.CitizenAttack: // 시민 공격 확인
-                    return 10f; // 시민 공격 Heat
-                case CrimeType.CitizenKilled: // 시민 사망 확인
-                    return 25f; // 시민 사망 Heat
-                case CrimeType.VehicleAttack: // 차량 공격 확인
-                    return 5f; // 차량 공격 Heat
-                case CrimeType.VehicleDestroyed: // 차량 파괴 확인
-                    return 20f; // 차량 파괴 Heat
-                case CrimeType.Explosion: // 폭발 확인
-                    return 15f; // 폭발 Heat
-                case CrimeType.GuardAttack: // 경비 공격 확인
-                    return 20f; // 경비 공격 Heat
-                case CrimeType.GuardKilled: // 경비 처치 확인
-                    return 35f; // 경비 처치 Heat
-                default: // 일반 총격 처리
-                    return 5f; // 총격 Heat
+                case CrimeType.CitizenAttack: return 10f; // 시민 공격 Heat
+                case CrimeType.CitizenKilled: return 25f; // 시민 사망 Heat
+                case CrimeType.VehicleAttack: return 5f; // 차량 공격 Heat
+                case CrimeType.VehicleDestroyed: return 20f; // 차량 파괴 Heat
+                case CrimeType.Explosion: return 15f; // 폭발 Heat
+                case CrimeType.GuardAttack: return 20f; // 경비 공격 Heat
+                case CrimeType.GuardKilled: return 35f; // 경비 처치 Heat
+                default: return 5f; // 총격 Heat
             }
         }
 
@@ -95,15 +80,15 @@ namespace ProjectK.Day21 // 21일차 피해·수배 이름 공간
             }
         }
 
-        public static int GuardTargetCount(int stars) // 수배 단계별 활성 추적 병력 목표
+        public static int GuardTargetCount(int stars) // E-01·E-02 기본 대응 병력 목표
         {
             switch (Mathf.Clamp(stars, 0, MaximumStars)) // 안전한 단계 분기
             {
-                case 1: return 3; // 일성 경비 수
-                case 2: return 5; // 이성 경비 수
-                case 3: return 8; // 삼성 경비 수
-                case 4: return 12; // 사성 경비 수
-                case 5: return 16; // 오성 경비 수
+                case 1: return 3; // 일성 일반 병력 3명
+                case 2: return 5; // 이성 일반 병력 5명
+                case 3: return 8; // 삼성 일반·정예 병력 8명
+                case 4: return 10; // 사성 E-03 두 자리를 확보한 기본 병력 10명
+                case 5: return 11; // 오성 E-03·E-04 다섯 자리를 확보한 기본 병력 11명
                 default: return 0; // 수배 없음
             }
         }
@@ -113,10 +98,30 @@ namespace ProjectK.Day21 // 21일차 피해·수배 이름 공간
             switch (Mathf.Clamp(stars, 0, MaximumStars)) // 안전한 단계 분기
             {
                 case 3: return 0.20f; // 삼성부터 소수 정예 투입
-                case 4: return 0.42f; // 사성 정예 비율 증가
-                case 5: return 0.65f; // 오성 정예 중심 대응
+                case 4: return 0.40f; // 사성 E-03와 함께 정예 비율 유지
+                case 5: return 0.45f; // 오성 특수 병력과 함께 E-02 약 절반 유지
                 default: return 0f; // 이성 이하 일반 E-01만 사용
             }
+        }
+
+        public static int HeavyTargetCount(int stars) // E-03 중장갑 대응 목표
+        {
+            switch (Mathf.Clamp(stars, 0, MaximumStars)) // 안전한 단계 분기
+            {
+                case 4: return 2; // 사성 중장갑 두 명
+                case 5: return 3; // 오성 중장갑 세 명
+                default: return 0; // 삼성 이하 미투입
+            }
+        }
+
+        public static int DroneTargetCount(int stars) // E-04 감시 드론 대응 목표
+        {
+            return Mathf.Clamp(stars, 0, MaximumStars) >= 5 ? 2 : 0; // 오성에서만 감시 드론 두 대 투입
+        }
+
+        public static int TotalResponseTargetCount(int stars) // E-01~E-04 전체 대응 병력 확인
+        {
+            return GuardTargetCount(stars) + HeavyTargetCount(stars) + DroneTargetCount(stars); // 전체 병력 목표 반환
         }
 
         public static float DecayDelayForStars(int stars) // 별 감소를 시작하기 위한 미발각 시간

@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement; // 기존 테스트 씬 조회
 
 public static class ProjectKDay11Validation // 정적 연결과 실제 계산 검사 메뉴
 {
-    [MenuItem("Project K/Day 11/Validate Recoil And Hearing Setup")] // 설정 연결 검사 메뉴
+    // 설정 연결 검사 메뉴
     public static void ValidateSetup() // 에셋과 씬을 변경하지 않는 연결 확인
     {
         if (EditorApplication.isCompiling || EditorApplication.isUpdating) // 검사 가능한 임포트 상태 확인
@@ -77,7 +77,7 @@ public static class ProjectKDay11Validation // 정적 연결과 실제 계산 �
         }
     }
 
-    [MenuItem("Project K/Day 11/Test Handling Rules")] // Unity 계산 규칙 검사 메뉴
+    // Unity 계산 규칙 검사 메뉴
     public static void TestRules() // 실제 프로덕션 함수를 사용하는 회귀 검사
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode) // 테스트용 객체가 플레이에 간섭하지 않도록 제한

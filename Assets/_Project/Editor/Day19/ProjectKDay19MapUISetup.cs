@@ -14,7 +14,7 @@ public static class ProjectKDay19MapUISetup // Map 씬에 전체 지도와 미�
     public const string SourceCommit = "ea1158cc0bc0d1828d66c48ae9d18876a37418f2"; // 18일차 기준 최신 커밋
     private static bool applying; // 중복 실행 방지
 
-    [MenuItem("Project K/Day 19/Setup World Map And Minimap")] // 실제 설치 메뉴
+    // 실제 설치 메뉴
     public static void Apply() // MapWorldRoot에 지도 UI 추가
     {
         if (applying || EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) // 안전한 편집 시점 확인

@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement; // 대상 씬 접근
 
 public static class ProjectKDay12Validation // 설정·발사 규칙·부위 판정 검사
 {
-    [MenuItem("Project K/Day 12/Validate Three Firearms Setup")] // 설치 참조 검사 메뉴
+    // 설치 참조 검사 메뉴
     public static void ValidateSetup() // 파일과 씬 연결 확인
     {
         if (!CanTest()) // 안전한 에디터 검사 시점 확인
@@ -74,7 +74,7 @@ public static class ProjectKDay12Validation // 설정·발사 규칙·부위 판
         }
     }
 
-    [MenuItem("Project K/Day 12/Test Fire Modes And Damage")] // 실제 발사 계산 회귀 검사 메뉴
+    // 실제 발사 계산 회귀 검사 메뉴
     public static void TestRules() // 코드의 실제 사격 규칙 검증
     {
         if (!CanTest()) // 검사 가능 시점 확인
@@ -159,7 +159,7 @@ public static class ProjectKDay12Validation // 설정·발사 규칙·부위 판
         return total; // 실제 발사 수 반환
     }
 
-    [MenuItem("Project K/Day 12/Test Head Body And Wall Physics")] // 실제 부위 충돌 회귀 검사 메뉴
+    // 실제 부위 충돌 회귀 검사 메뉴
     public static void TestPhysics() // 별도 임시 씬에서 발사 경로 검사
     {
         if (!CanTest()) // 편집 모드 검사 시점 확인

@@ -15,7 +15,7 @@ public static class ProjectKDay12Setup // 기존 일차를 유지하는 대표 �
     public const string InputPath = "Assets/InputSystem_Actions.inputactions"; // 기존 입력 에셋 경로
     private static bool applying; // 중복 메뉴 실행 잠금
 
-    [MenuItem("Project K/Day 12/Setup Three Representative Firearms")] // 12일차 수동 설정 메뉴
+    // 12일차 수동 설정 메뉴
     public static void ApplySetup() // 세 총기와 입력과 테스트 구역 구성
     {
         if (applying || EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) // 안전한 편집 시점 확인

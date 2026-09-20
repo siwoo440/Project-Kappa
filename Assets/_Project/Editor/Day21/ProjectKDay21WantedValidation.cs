@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement; // 활성 Map 씬 확인
 
 public static class ProjectKDay21WantedValidation // 시민·차량 피해와 0~5성 수배 규칙 검사
 {
-    [MenuItem("Project K/Day 21/Validate Damage Wanted And Response")] // 실제 씬 검사 메뉴
+    // 실제 씬 검사 메뉴
     public static void ValidateMenu() // 활성 Map의 Day21 구성 검사
     {
         Scene scene = SceneManager.GetActiveScene(); // 현재 활성 씬 조회
@@ -36,7 +36,7 @@ public static class ProjectKDay21WantedValidation // 시민·차량 피해와 0~
         }
     }
 
-    [MenuItem("Project K/Day 21/Test Wanted Rules")] // Heat·별 수학 검사 메뉴
+    // Heat·별 수학 검사 메뉴
     public static void RuleTestMenu() // 씬 프리팹과 별 규칙 공통 검사
     {
         try // 규칙 검사 예외 처리

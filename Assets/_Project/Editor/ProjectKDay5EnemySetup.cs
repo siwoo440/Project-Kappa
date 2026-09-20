@@ -26,7 +26,7 @@ public static class ProjectKDay5EnemySetup // E-01 경비 자동 구성 도구
         EditorApplication.delayCall += ApplySetup; // 지연 실행 예약
     }
 
-    [MenuItem("Project K/Day 5/Setup E-01 Patrol Guards")] // 메뉴 항목 등록
+    // 메뉴 항목 등록
     public static void ApplySetup() // E-01 경비 구성 적용
     {
         Scene testScene = SceneManager.GetSceneByPath(TestScenePath); // 테스트 씬 조회

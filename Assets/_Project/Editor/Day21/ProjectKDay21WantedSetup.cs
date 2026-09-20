@@ -16,7 +16,7 @@ public static class ProjectKDay21WantedSetup // 시민·차량 체력과 GTA식 
     public const string SourceCommit = "7f709c72d3eaf842face0955362efd1d9a6babc8"; // 20일차 완료 기준 최신 커밋
     private static bool applying; // 중복 실행 방지
 
-    [MenuItem("Project K/Day 21/Setup Damage Wanted And Response")] // 실제 설치 메뉴
+    // 실제 설치 메뉴
     public static void Apply() // 피해·Heat·별·증원 시스템 전체 설치
     {
         if (applying || EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) // 안전한 편집 시점 확인

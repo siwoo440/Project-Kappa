@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement; // 활성 씬 경로 검사
 
 public static class ProjectKDay17Validation // 네온 도시 디테일의 참조와 과도한 광원 검사
 {
-    [MenuItem("Project K/Day 17/Validate Cyberpunk City")] // 실제 Map 씬 검사 메뉴
+    // 실제 Map 씬 검사 메뉴
     public static void ValidateMenu() // 활성 Map의 디테일 검사
     {
         Scene scene = SceneManager.GetActiveScene(); // 현재 씬 조회
@@ -35,7 +35,7 @@ public static class ProjectKDay17Validation // 네온 도시 디테일의 참조
         }
     }
 
-    [MenuItem("Project K/Day 17/Test Cyberpunk Detail Rules")] // 빠른 규칙 검사 메뉴
+    // 빠른 규칙 검사 메뉴
     public static void RuleTestMenu() // 현재 씬의 규칙 검사 재사용
     {
         ValidateMenu(); // 동일한 실제 구조 검사를 실행

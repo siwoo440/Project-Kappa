@@ -21,7 +21,7 @@ public static class ProjectKDay15Validation // 계측 수치와 원본 복구 �
         return !EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isCompiling && !EditorApplication.isUpdating; // 실행 중 씬 변경 금지
     }
 
-    [MenuItem("Project K/Day 15/Test Balance Metrics")] // 실제 수치 집계와 저장 형식 검사
+    // 실제 수치 집계와 저장 형식 검사
     public static void TestMetrics() // 외부 테스트 패키지 없는 기능 검사
     {
         if (!Safe()) // 실행 상태 확인
@@ -80,7 +80,7 @@ public static class ProjectKDay15Validation // 계측 수치와 원본 복구 �
         return sample; // 검증용 자료 반환
     }
 
-    [MenuItem("Project K/Day 15/Validate Balance Lab")] // 기존 센터와 신규 계측 참조 확인
+    // 기존 센터와 신규 계측 참조 확인
     public static void Validate() // 사용자 편집 씬 검사
     {
         if (!Safe()) // 안전한 검사 시점 확인
@@ -114,7 +114,7 @@ public static class ProjectKDay15Validation // 계측 수치와 원본 복구 �
         Debug.Log("Day 15 실제 설정 검사 통과: " + checks + "항목"); // 실행 검사 결과 표시
     }
 
-    [MenuItem("Project K/Day 15/Test Trial Target Restore")] // 원본 표적 보호와 복사본 수명 검사
+    // 원본 표적 보호와 복사본 수명 검사
     public static void TestRestore() // 저장하지 않는 임시 씬 검증
     {
         if (!Safe()) // 사용자 Play 확인

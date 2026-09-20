@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement; // 활성 씬 경로 검사
 
 public static class ProjectKDay18StreetPolishValidation // 간판 관통과 거리 디테일 검사
 {
-    [MenuItem("Project K/Day 18/Validate Signs And Streetscape")] // 실제 Map 보정 검사 메뉴
+    // 실제 Map 보정 검사 메뉴
     public static void ValidateMenu() // 활성 Map의 거리 보정 검사
     {
         Scene scene = SceneManager.GetActiveScene(); // 현재 씬 조회
@@ -34,7 +34,7 @@ public static class ProjectKDay18StreetPolishValidation // 간판 관통과 거�
         }
     }
 
-    [MenuItem("Project K/Day 18/Test Sign Bounds And Depth")] // 문자 바운드 중심 빠른 검사 메뉴
+    // 문자 바운드 중심 빠른 검사 메뉴
     public static void RuleTestMenu() // 동일한 검사 재사용
     {
         ValidateMenu(); // 실제 검사 실행

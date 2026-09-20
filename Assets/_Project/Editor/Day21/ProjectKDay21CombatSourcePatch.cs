@@ -20,7 +20,7 @@ public static class ProjectKDay21CombatSourcePatch // 시민·차량이 기존 �
         EditorApplication.delayCall += ApplyNow; // 에디터 안정 시점에 소스 패치
     }
 
-    [MenuItem("Project K/Day 21/Patch Combat Damage Targets")] // 자동 패치 실패 시 수동 메뉴
+    // 자동 패치 실패 시 수동 메뉴
     public static void ApplyNow() // 총기와 검이 WorldDamageReceiver를 인식하도록 수정
     {
         bool firearm = PatchFirearm(); // 총기 집계 경로 확장

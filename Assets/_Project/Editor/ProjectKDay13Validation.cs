@@ -21,7 +21,7 @@ public static class ProjectKDay13Validation // 산탄 장전 표적 배치 검�
         return !EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isCompiling && !EditorApplication.isUpdating; // 실행 중 사용자 장면 변경 금지
     }
 
-    [MenuItem("Project K/Day 13/Test Reload Cycle And Target Rules")] // 외부 테스트 패키지 없는 규칙 검사
+    // 외부 테스트 패키지 없는 규칙 검사
     public static void TestRules() // 실제 런타임 상태 클래스 검사
     {
         if (!CanTest()) // 검사 시점 확인
@@ -65,7 +65,7 @@ public static class ProjectKDay13Validation // 산탄 장전 표적 배치 검�
         Debug.Log("Day13 규칙 검사 통과: " + checks + "항목"); // 실행한 검사 결과만 표시
     }
 
-    [MenuItem("Project K/Day 13/Test Target Hinge And Rail")] // 실제 표적 회전과 충돌 검사
+    // 실제 표적 회전과 충돌 검사
     public static void TestTargetMotion() // 저장하지 않는 검사 전용 씬
     {
         if (!CanTest()) // 안전한 편집 시점 확인
@@ -124,7 +124,7 @@ public static class ProjectKDay13Validation // 산탄 장전 표적 배치 검�
         }
     }
 
-    [MenuItem("Project K/Day 13/Validate Training Campus")] // 씬 참조와 안전거리 검사
+    // 씬 참조와 안전거리 검사
     public static void ValidateScene() // 현재 저장된 훈련장 확인
     {
         if (!CanTest()) // 안전한 편집 상태 확인

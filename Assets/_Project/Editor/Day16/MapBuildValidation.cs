@@ -17,7 +17,7 @@ namespace ProjectK.Day16 // 본편 Map 전용 이름 공간
             }
         }
 
-        [MenuItem("Project K/Day 16/Validate Map")] // 사용자 Map 설정 검사
+        // 사용자 Map 설정 검사
         public static void ValidateMenu() // 실제 열린 Map 검사
         {
             if (Application.isPlaying) // 편집 상태 확인
@@ -173,7 +173,7 @@ namespace ProjectK.Day16 // 본편 Map 전용 이름 공간
             return false; // 공중 도착점 보고
         }
 
-        [MenuItem("Project K/Day 16/Test Terrain Rules")] // 씬 생성 없이 좌표 규칙 검증
+        // 씬 생성 없이 좌표 규칙 검증
         public static void TestRules() // 실제 C# 높이 계산의 경계와 범위 검사
         {
             try // 첫 실패 위치 보고

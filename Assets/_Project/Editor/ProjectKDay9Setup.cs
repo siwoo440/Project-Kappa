@@ -60,7 +60,7 @@ public static class ProjectKDay9Setup // 9일차 장비 자동 구성 도구
         ApplySetup(); // 장비 설정 실행
     }
 
-    [MenuItem("Project K/Day 9/Setup Equipment And Items")] // 수동 설정 메뉴
+    // 수동 설정 메뉴
     public static void ApplySetup() // 기존 씬을 유지하는 장비 구성
     {
         if (applying || EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling) // 중복 실행과 플레이 상태 확인

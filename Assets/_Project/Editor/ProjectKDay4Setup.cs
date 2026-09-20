@@ -28,7 +28,7 @@ public static class ProjectKDay4Setup // 4일차 자동 구성 도구
         EditorApplication.delayCall += ApplyDay4Setup; // 컴파일 종료 후 적용 예약
     }
 
-    [MenuItem("Project K/Day 4/Setup Interaction Noise Detection")] // 수동 구성 메뉴
+    // 수동 구성 메뉴
     public static void ApplyDay4Setup() // 4일차 구성 적용
     {
         InputActionAsset inputAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(InputAssetPath); // 입력 에셋 조회

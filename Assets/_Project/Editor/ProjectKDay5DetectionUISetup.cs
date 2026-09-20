@@ -25,7 +25,7 @@ public static class ProjectKDay5DetectionUISetup // 탐지 UI 자동 구성 도�
         EditorApplication.delayCall += ApplySetup; // 지연 적용 예약
     }
 
-    [MenuItem("Project K/Day 5/Setup Detection Billboard UI")] // 메뉴 항목 등록
+    // 메뉴 항목 등록
     public static void ApplySetup() // 탐지 UI 구성 적용
     {
         Scene scene = SceneManager.GetSceneByPath(TestScenePath); // 테스트 씬 조회

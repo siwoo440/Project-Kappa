@@ -29,7 +29,7 @@ public static class ProjectKDay8Setup // 8일차 받아치기 자세 E-02 자동
         EditorApplication.delayCall += ApplySetup; // 컴파일 후 구성 예약
     }
 
-    [MenuItem("Project K/Day 8/Setup Parry Posture E-02")] // 수동 구성 메뉴
+    // 수동 구성 메뉴
     public static void ApplySetup() // 8일차 구성 적용
     {
         ConfigureDefenseInput(); // RMB 방어 입력 구성
