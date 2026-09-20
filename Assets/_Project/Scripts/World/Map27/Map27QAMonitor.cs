@@ -1,3 +1,4 @@
+using ProjectK.Day30; // Day30 통합 HUD 테마와 Tab 임무 창 상태 참조
 using System.Collections.Generic; // 개체별 이동 기록
 using ProjectK.Day20; // 시민·차량 생활 개체 참조
 using ProjectK.Day21; // 수배 경비 참조
@@ -189,33 +190,38 @@ namespace ProjectK.Day27 // 27일차 통합 QA 이름 공간
 
         private void OnGUI() // QA HUD 출력
         {
-            if (!showHud) // 숨김 확인
+            if (!showHud || Map30UITheme.HideGameplayHUD) // F10 숨김 또는 Tab 전체 임무 창 확인
             {
-                return; // 출력 생략
+                return; // QA HUD 출력 생략
             }
 
             MapWantedSystem wanted = MapWantedSystem.Instance; // 수배 상태 조회
             bool pending = Map26CrimeReportSystem.Instance != null && Map26CrimeReportSystem.Instance.HasPendingReport; // 신고 진행 여부
             int stars = wanted != null ? wanted.Stars : 0; // 별 단계 조회
-            GUIStyle style = new GUIStyle(GUI.skin.box); // 박스 스타일 생성
-            style.alignment = TextAnchor.UpperLeft; // 좌상단 정렬
-            style.fontSize = 13; // 글자 크기
-            style.normal.textColor = Color.white; // 흰색 글자
+            Rect rect = new Rect(14f, 92f, 180f, 150f); // HP 아래 개발 상태 패널
+            Map30UITheme.DrawPanel(rect); // 공통 파란색 패널 출력
 
-            string text = "DAY27 QA  [F10]\n" +
-                          "FPS        " + smoothedFps.ToString("0") + "\n" +
-                          "Citizen    " + activeCitizens + "\n" +
-                          "Vehicle    " + activeVehicles + "\n" +
-                          "Guard      " + activeGuards + "\n" +
-                          "E-03       " + activeHeavy + "\n" +
-                          "E-04       " + activeDrones + "\n" +
-                          "Reports    " + (pending ? 1 : 0) + "\n" +
-                          "Wanted     " + stars + "\n" +
-                          "Stuck      " + stuckHotspots; // QA 문자열 생성
+            GUIStyle header = new GUIStyle(GUI.skin.label); // QA 제목 스타일
+            header.fontSize = 10; // 작은 제목
+            header.fontStyle = FontStyle.Bold; // 제목 강조
+            header.normal.textColor = Map30UITheme.Cyan; // 청록 제목
 
-            GUI.Box(new Rect(18f, 102f, 170f, 190f), text, style); // QA HUD 출력
+            GUIStyle body = new GUIStyle(GUI.skin.label); // QA 수치 스타일
+            body.fontSize = 10; // 밀도 높은 개발 정보
+            body.normal.textColor = Map30UITheme.Text; // 밝은 청백색
+
+            GUI.Label(new Rect(rect.x + 10f, rect.y + 7f, 154f, 18f), "SYSTEM QA  [F10]", header); // QA 헤더
+            string line1 = "FPS " + smoothedFps.ToString("0") + "   CIT " + activeCitizens + "   VEH " + activeVehicles; // 성능 요약
+            string line2 = "GUARD " + activeGuards + "   E03 " + activeHeavy + "   E04 " + activeDrones; // 병력 요약
+            string line3 = "REPORT " + (pending ? "ON" : "OFF") + "   WANTED " + stars + "   STUCK " + stuckHotspots; // 사건·수배 요약
+            GUI.Label(new Rect(rect.x + 10f, rect.y + 31f, 158f, 21f), line1, body); // 성능 행
+            GUI.Label(new Rect(rect.x + 10f, rect.y + 57f, 158f, 21f), line2, body); // 병력 행
+            GUI.Label(new Rect(rect.x + 10f, rect.y + 83f, 158f, 21f), line3, body); // 수배 행
+            Map30UITheme.DrawDivider(new Rect(rect.x + 10f, rect.y + 113f, 158f, 1f)); // 하단 구분선
+            GUI.Label(new Rect(rect.x + 10f, rect.y + 121f, 158f, 18f), "CITY RUNTIME MONITOR", header); // 하단 시스템 문구
         }
 
+        
         private static float PlanarDistance(Vector3 first, Vector3 second) // XZ 거리 계산
         {
             return Vector2.Distance(new Vector2(first.x, first.z), new Vector2(second.x, second.z)); // 수평 거리 반환

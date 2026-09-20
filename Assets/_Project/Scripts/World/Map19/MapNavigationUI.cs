@@ -1,3 +1,4 @@
+using ProjectK.Day30; // Day30 통합 HUD 테마와 Tab 임무 창 상태 참조
 using System; // 문자열과 상태 보존
 using ProjectK.Day16; // 본편 월드와 장소 참조
 using UnityEngine; // 지도 UI와 월드 좌표
@@ -269,6 +270,10 @@ namespace ProjectK.Day19 // 19일차 월드 지도 이름 공간
 
         private void OnGUI() // 미니맵과 전체 지도 그리기
         {
+            if (Map30UITheme.HideGameplayHUD) // Tab 전체 임무 창 상태 확인
+            {
+                return; // 임무 창 위 미니맵·지도 조작 안내 숨김
+            }
             if (world == null || world.Player == null) // 월드 표시 준비 확인
             {
                 return; // UI 그리기 중단

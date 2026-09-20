@@ -1,3 +1,4 @@
+using ProjectK.Day30; // Day30 통합 HUD 테마와 Tab 임무 창 상태 참조
 using ProjectK.Day16; // 본편 월드 참조
 using ProjectK.Day26; // 시민 목격·지연 신고 시스템 참조
 using UnityEngine; // Heat·수배 UI와 시야 검사
@@ -218,6 +219,10 @@ namespace ProjectK.Day21 // 21일차 피해·수배 이름 공간
 
         private void OnGUI() // GTA식 별 수배도와 신고 진행 HUD 표시
         {
+            if (Map30UITheme.HideGameplayHUD) // Tab 전체 임무 창 상태 확인
+            {
+                return; // 임무 창 위 수배·신고 HUD 숨김
+            }
             bool pendingReport = Map26CrimeReportSystem.Instance != null && Map26CrimeReportSystem.Instance.HasPendingReport; // 아직 수배 전인 신고 진행 여부 조회
             if (stars <= 0 && !pendingReport) // 평상시 수배·신고 HUD 숨김
             {

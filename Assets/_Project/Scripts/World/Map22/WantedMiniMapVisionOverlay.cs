@@ -1,3 +1,4 @@
+using ProjectK.Day30; // Day30 통합 HUD 테마와 Tab 임무 창 상태 참조
 using ProjectK.Day19; // 기존 미니맵 UI 참조
 using ProjectK.Day21; // 수배 경비와 병력 종류 참조
 using ProjectK.Day24; // 지상·지하 층 판정 참조
@@ -61,6 +62,10 @@ namespace ProjectK.Day22 // 22일차 미니맵 적 방향 표시 이름 공간
 
         private void OnGUI() // 기존 미니맵 위에 수배 병력 위치·종류·층 표시
         {
+            if (Map30UITheme.HideGameplayHUD) // Tab 전체 임무 창 상태 확인
+            {
+                return; // 임무 창 위 수배 병력 오버레이 숨김
+            }
             if (navigation == null || navigation.World == null || navigation.World.Player == null) // 필수 미니맵 참조 확인
             {
                 return; // 표시 중단

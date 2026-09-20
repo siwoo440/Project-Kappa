@@ -1,3 +1,4 @@
+using ProjectK.Day30; // Day30 통합 HUD 테마와 Tab 임무 창 상태 참조
 using UnityEngine; // 장비 화면 표시 기능
 
 [DisallowMultipleComponent] // 장비 HUD 중복 방지
@@ -27,6 +28,10 @@ public sealed class PlayerEquipmentHUD : MonoBehaviour // 근접 총기 보조�
 
     private void OnGUI() // 기존 HUD 하나에서 모든 장비 표시
     {
+        if (Map30UITheme.HideGameplayHUD) // Tab 전체 임무 창 상태 확인
+        {
+            return; // 임무 창 위 장비·조준·상호작용 HUD 숨김
+        }
         if (equipment == null || (!equipment.IsFirearmEquipped && equipment.CurrentWeapon == null)) // 표시 가능한 장착 상태 확인
         {
             return; // 미설정 상태 표시 생략
@@ -47,7 +52,9 @@ public sealed class PlayerEquipmentHUD : MonoBehaviour // 근접 총기 보조�
                 DrawReticle(width, height); // 단일 조준점과 명중 표시
                 if (interaction != null && interaction.HasTarget && (assassination == null || !assassination.HasTarget)) // 암살 안내와 중복 방지
                 {
-                    GUI.Box(new Rect(width * 0.5f - 175f, height * 0.74f, 350f, 36f), "[F] " + interaction.CurrentLabel, hintStyle); // 기존 보급대와 상호작용 안내
+                    Rect hintRect = new Rect(width * 0.5f - 175f, height * 0.74f, 350f, 36f); // 중앙 상호작용 안내 영역
+                    Map30UITheme.DrawPanel(hintRect); // 상호작용 안내도 공통 파랑 테마 적용
+                    GUI.Label(hintRect, "[F] " + interaction.CurrentLabel, hintStyle); // 상호작용 문구 출력
                 }
             }
             DrawPanel(width, height); // 조준경 위에 기존 장비 패널 한 번 표시
@@ -61,47 +68,45 @@ public sealed class PlayerEquipmentHUD : MonoBehaviour // 근접 총기 보조�
 
     private void DrawPanel(float screenWidth, float screenHeight) // 우측 하단 장비 정보
     {
-        const float width = 362f; // 읽기 쉬운 패널 너비
-        Rect panel = new Rect(screenWidth - width - 12f, screenHeight - 352f, width, 340f); // 화면 내부 패널 위치
-        GUI.Box(panel, GUIContent.none); // 기존 패널 배경
-        float x = panel.x + 14f; // 왼쪽 글자 여백
+        const float width = 320f; // 화면을 덜 가리는 패널 너비
+        const float height = 236f; // 핵심 장비 정보만 표시하는 높이
+        Rect panel = new Rect(screenWidth - width - 16f, screenHeight - height - 16f, width, height); // 우측 하단 고정 배치
+        Map30UITheme.DrawPanel(panel); // 공통 청록·파랑 패널 출력
+        float x = panel.x + 13f; // 왼쪽 글자 여백
         float y = panel.y + 10f; // 위쪽 글자 여백
         bool gun = equipment.IsFirearmEquipped && firearm != null && firearm.Definition != null; // 총기 표시 모드 확인
-        WeaponData stats = gun ? firearm.Definition.Stats : equipment.CurrentWeapon.Stats; // 현재 무기의 공통 수치
-        string name = gun ? firearm.Definition.DisplayName : equipment.CurrentWeapon.DisplayName; // 현재 장착 이름
-        GUI.Label(new Rect(x, y, width - 28f, 27f), "[" + (equipment.CurrentSlot + 1) + "] " + name, titleStyle); // 장착 슬롯과 무기 이름
-        GUI.Label(new Rect(x, y + 29f, width - 28f, 22f), stats != null ? "피해 " + stats.HealthDamage.ToString("0") + " / 자세 " + stats.PostureDamage.ToString("0") + " / 간격 " + stats.FireInterval.ToString("0.00") + "초" : string.Empty, bodyStyle); // 무기별 실제 데이터 표시
+        WeaponData stats = gun ? firearm.Definition.Stats : equipment.CurrentWeapon.Stats; // 현재 무기 공통 수치
+        string name = gun ? firearm.Definition.DisplayName : equipment.CurrentWeapon.DisplayName; // 현재 무기 이름
 
-        if (gun && firearm.State != null) // 총기 탄약 표시 조건
-        {
-            string state = firearm.IsEquipping ? "장착 중" : firearm.IsCycling ? (firearm.Definition.BoltAction ? "볼트 준비" : "펌프 준비") : firearm.IsReloading ? "재장전 " + (firearm.ReloadProgress * 100f).ToString("0") + "%" : firearm.IsAiming ? "조준 " + (firearm.AimProgress * 100f).ToString("0") + "%" : firearm.State.Rounds == 0 ? "T 재장전" : firearm.Definition.FireModeLabel; // 현재 사격 상태
-            GUI.Label(new Rect(x, y + 53f, width - 28f, 23f), "탄약 " + firearm.State.Rounds + "/" + firearm.State.Capacity + "   예비 " + firearm.State.Reserve + "   " + state, bodyStyle); // 장탄수와 예비탄 구분
-            DrawReloadBar(new Rect(x, y + 81f, width - 28f, 7f), firearm.IsReloading ? firearm.ReloadProgress : firearm.IsCycling ? firearm.CycleProgress : 0f); // HP와 섞이지 않는 총기 재장전 표시
-        }
-        else // 기존 검술 조작 표시
-        {
-            GUI.Label(new Rect(x, y + 53f, width - 28f, 29f), "LMB 검 공격 / RMB 방어·받아치기", bodyStyle); // 기존 조작 안내 유지
-        }
+        GUI.Label(new Rect(x, y, width - 26f, 27f), "[" + (equipment.CurrentSlot + 1) + "] " + name, titleStyle); // 장착 슬롯과 이름
+        GUI.Label(new Rect(x, y + 28f, width - 26f, 22f), stats != null ? "피해 " + stats.HealthDamage.ToString("0") + "   자세 " + stats.PostureDamage.ToString("0") + "   간격 " + stats.FireInterval.ToString("0.00") + "초" : string.Empty, bodyStyle); // 핵심 무기 수치
+        Map30UITheme.DrawDivider(new Rect(x, y + 52f, width - 26f, 1f)); // 상단 정보 구분선
 
-        if (gun) // 총기별 실제 정확도와 소음기 안내
+        if (gun && firearm.State != null) // 총기 탄약 정보 확인
         {
-            GUI.Label(new Rect(x, y + 90f, width - 28f, 22f), "분산 ±" + firearm.SpreadDegrees.ToString("0.00") + "° / " + (firearm.SupportsSuppressor ? "소음기 " + (firearm.IsSuppressed ? "ON [B]" : "OFF [B]") : "기본 총성 사용"), bodyStyle); // 실제 사격 수치 표시
-            GUI.Label(new Rect(x, y + 113f, width - 28f, 22f), "표적 " + firearm.PracticeHits + "/" + firearm.PracticeShots + " (" + firearm.PracticeAccuracy.ToString("0") + "%) / 총성 " + firearm.EffectiveNoiseRadius.ToString("0.0") + "m", bodyStyle); // 사격장 적중률과 발사 반경 표시
+            string state = firearm.IsEquipping ? "장착 중" : firearm.IsCycling ? (firearm.Definition.BoltAction ? "볼트 준비" : "펌프 준비") : firearm.IsReloading ? "재장전 " + (firearm.ReloadProgress * 100f).ToString("0") + "%" : firearm.IsAiming ? "조준 " + (firearm.AimProgress * 100f).ToString("0") + "%" : firearm.State.Rounds == 0 ? "T 재장전" : firearm.Definition.FireModeLabel; // 현재 총기 상태
+            GUI.Label(new Rect(x, y + 60f, width - 26f, 22f), "탄약 " + firearm.State.Rounds + "/" + firearm.State.Capacity + "   예비 " + firearm.State.Reserve + "   " + state, bodyStyle); // 탄약과 상태
+            Map30UITheme.DrawBar(new Rect(x, y + 84f, width - 26f, 7f), firearm.IsReloading ? firearm.ReloadProgress : firearm.IsCycling ? firearm.CycleProgress : 0f, Map30UITheme.Cyan); // 재장전·사이클 게이지
+            GUI.Label(new Rect(x, y + 98f, width - 26f, 22f), "분산 ±" + firearm.SpreadDegrees.ToString("0.00") + "°   총성 " + firearm.EffectiveNoiseRadius.ToString("0.0") + "m", bodyStyle); // 총기 핵심 상태
+        }
+        else // 근접 무기 표시
+        {
+            GUI.Label(new Rect(x, y + 60f, width - 26f, 24f), "LMB 공격   RMB 방어·받아치기", bodyStyle); // 근접 조작 안내
         }
 
-        GUI.Label(new Rect(x, y + 139f, width - 28f, 23f), "[R] 마비침  " + (support != null ? support.RemainingDarts + "/" + support.Capacity : "0"), bodyStyle); // 마비침 탄약 별도 유지
-        GUI.Label(new Rect(x, y + 164f, width - 28f, 23f), consumables != null ? "[G] " + consumables.SelectedName + "  x" + consumables.SelectedCount : string.Empty, bodyStyle); // 소모품 수량 유지
-        GUI.Label(new Rect(x, y + 193f, width - 28f, 57f), "1~4 검 / 5~9 총기 / Q·E 이전·다음\n총: LMB 발사 / RMB 조준 / T 재장전\nV 아이템 선택 / F 상호작용·보급", bodyStyle); // 충돌 없는 장비 조작 안내
-        GUI.Label(new Rect(x, y + 249f, width - 28f, 22f), gun ? "탄환 적중 " + firearm.LastPelletHits + "/" + firearm.Definition.PelletCount + (firearm.LastPracticeTime >= 0f ? "  TTK " + firearm.LastPracticeTime.ToString("0.00") + "초" : "") : string.Empty, bodyStyle); // 산탄과 처치 기록
-        GUI.Label(new Rect(x, y + 276f, width - 28f, 39f), equipment.Message, bodyStyle); // 실패 원인과 장비 사용 결과
+        GUI.Label(new Rect(x, y + 126f, width - 26f, 22f), "[R] 마비침 " + (support != null ? support.RemainingDarts + "/" + support.Capacity : "0") + "    [G] " + (consumables != null ? consumables.SelectedName + " x" + consumables.SelectedCount : "---"), bodyStyle); // 보조 장비 한 줄 요약
+        Map30UITheme.DrawDivider(new Rect(x, y + 153f, width - 26f, 1f)); // 조작 안내 구분선
+        GUI.Label(new Rect(x, y + 162f, width - 26f, 38f), "1~4 검 / 5~9 총기 / Q·E 교체\nV 아이템 / F 상호작용", bodyStyle); // 핵심 조작만 간결하게 표시
+        GUI.Label(new Rect(x, y + 203f, width - 26f, 23f), equipment.Message, bodyStyle); // 현재 장비 결과·실패 원인
     }
 
+    
     private static void DrawReloadBar(Rect rect, float progress) // 재장전 게이지 표시
     {
         Color previous = GUI.color; // 기존 글자 색상 보존
-        GUI.color = new Color(0.13f, 0.16f, 0.20f, 1f); // 게이지 바탕 색상
+        GUI.color = new Color(0.01f, 0.05f, 0.08f, 1f); // 파란색 UI 게이지 바탕
         GUI.DrawTexture(rect, Texture2D.whiteTexture); // 재장전 바탕
-        GUI.color = new Color(1f, 0.66f, 0.17f, 1f); // 총기 재장전 주황색
+        GUI.color = Map30UITheme.Cyan; // 총기 재장전 청록색
         GUI.DrawTexture(new Rect(rect.x, rect.y, rect.width * Mathf.Clamp01(progress), rect.height), Texture2D.whiteTexture); // 재장전 진행도 표시
         GUI.color = previous; // 다른 표시 색상 복원
     }

@@ -1,3 +1,4 @@
+using ProjectK.Day30; // Day30 통합 HUD 테마와 Tab 임무 창 상태 참조
 using ProjectK.Day16; // 본편 월드 참조
 using ProjectK.Day19; // 전체 지도 열린 상태 참조
 using ProjectK.Day24; // 지상·지하 층 판정 참조
@@ -70,6 +71,10 @@ namespace ProjectK.Day29 // 29일차 플레이어 단말기 이름 공간
 
         private void OnGUI() // 참고 이미지의 얇은 네온 프레임을 IMGUI로 구성
         {
+            if (Map30UITheme.HideGameplayHUD) // Tab 전체 임무 창 상태 확인
+            {
+                return; // 전체 임무 창에서는 작은 단말기 HUD 숨김
+            }
             Map29TerminalObjectiveProvider provider = Map29TerminalObjectiveProvider.Instance; // 현재 목표 Provider 조회
             if (provider == null) // Provider 준비 확인
             {
@@ -98,7 +103,7 @@ namespace ProjectK.Day29 // 29일차 플레이어 단말기 이름 공간
             GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, Vector3.one * scale); // 단말기 UI에만 해상도 스케일 적용
 
             float designWidth = Screen.width / scale; // 스케일 보정된 가상 화면 너비
-            float panelX = designWidth >= 980f ? 204f : 14f; // 기존 HP·QA HUD와 겹치지 않는 왼쪽 상단 위치
+            float panelX = designWidth >= 980f ? 304f : 292f; // HP·QA 패널 오른쪽에 충분한 여백을 둔 단말기 위치
             const float panelY = 16f; // 상단 여백
             const float panelWidth = 356f; // 단말기 패널 너비
             const float panelHeight = 236f; // 단말기 패널 높이

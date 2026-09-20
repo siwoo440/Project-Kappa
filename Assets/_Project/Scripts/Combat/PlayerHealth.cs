@@ -1,3 +1,4 @@
+using ProjectK.Day30; // Day30 통합 HUD 테마와 Tab 임무 창 상태 참조
 using UnityEngine; // 유니티 기본 기능
 
 [DisallowMultipleComponent] // 중복 부착 방지
@@ -145,12 +146,30 @@ public sealed class PlayerHealth : MonoBehaviour // 플레이어 체력 자세 �
 
     private void OnGUI() // 플레이어 전투 수치 표시
     {
-        GUIStyle style = new GUIStyle(GUI.skin.box); // UI 스타일 생성
-        style.alignment = TextAnchor.MiddleLeft; // 좌측 정렬 적용
-        style.fontSize = 15; // 글자 크기 적용
-        style.normal.textColor = Color.white; // 글자 색상 적용
-        string stateText = dead ? "DEAD" : postureBroken ? "POSTURE BREAK" : "READY"; // 상태 문자열 계산
-        Rect rect = new Rect(18f, 18f, 270f, 70f); // UI 위치 계산
-        GUI.Box(rect, $" HP  {currentHealth:0}/{maxHealth:0}\n POSTURE  {currentPosture:0}/{maxPosture:0}   {stateText}", style); // 전투 수치 표시
+        if (Map30UITheme.HideGameplayHUD) // Tab 전체 임무 창 상태 확인
+        {
+            return; // 임무 창 위 일반 전투 HUD 숨김
+        }
+
+        Rect rect = new Rect(14f, 14f, 180f, 70f); // 좌측 상단 생존 정보 영역
+        Map30UITheme.DrawPanel(rect); // 공통 청록 패널 출력
+
+        GUIStyle title = new GUIStyle(GUI.skin.label); // 작은 시스템 제목 스타일
+        title.fontSize = 10; // 헤더 글자 크기
+        title.fontStyle = FontStyle.Bold; // 헤더 강조
+        title.normal.textColor = Map30UITheme.Muted; // 보조 청록색 적용
+
+        GUIStyle value = new GUIStyle(GUI.skin.label); // 실제 수치 스타일
+        value.fontSize = 12; // 수치 글자 크기
+        value.fontStyle = FontStyle.Bold; // 수치 강조
+        value.normal.textColor = Map30UITheme.Text; // 밝은 청백색 적용
+
+        string stateText = dead ? "DEAD" : postureBroken ? "POSTURE BREAK" : "READY"; // 현재 상태 문구 계산
+        GUI.Label(new Rect(rect.x + 10f, rect.y + 6f, 82f, 18f), "VITAL STATUS", title); // 패널 헤더
+        GUI.Label(new Rect(rect.x + 100f, rect.y + 6f, 68f, 18f), stateText, title); // 현재 상태 표시
+        GUI.Label(new Rect(rect.x + 10f, rect.y + 25f, 62f, 18f), "HP " + currentHealth.ToString("0") + "/" + maxHealth.ToString("0"), value); // HP 수치
+        Map30UITheme.DrawBar(new Rect(rect.x + 76f, rect.y + 30f, 92f, 7f), maxHealth > 0f ? currentHealth / maxHealth : 0f, Map30UITheme.Cyan); // HP 게이지
+        GUI.Label(new Rect(rect.x + 10f, rect.y + 46f, 68f, 18f), "POST " + currentPosture.ToString("0") + "/" + maxPosture.ToString("0"), value); // 자세 수치
+        Map30UITheme.DrawBar(new Rect(rect.x + 82f, rect.y + 51f, 86f, 7f), maxPosture > 0f ? currentPosture / maxPosture : 0f, Map30UITheme.Blue); // 자세 게이지
     }
 }
