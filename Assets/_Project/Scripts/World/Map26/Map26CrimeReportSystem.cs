@@ -124,6 +124,21 @@ namespace ProjectK.Day26 // 26일차 목격·신고 이름 공간
             }
         }
 
+        public void ClearForCheckpoint() // Day32 체크포인트 재시도용 신고 사건 전체 초기화
+        {
+            incidents.Clear(); // 진행·완료 대기 범죄 사건 제거
+            nextCleanupScan = 0f; // 다음 목격자 정리 즉시 허용
+            Map26CitizenWitness[] witnesses = UnityEngine.Object.FindObjectsByType<Map26CitizenWitness>(FindObjectsInactive.Include, FindObjectsSortMode.None); // 현재 시민 신고 상태 전체 조회
+
+            for (int i = 0; i < witnesses.Length; i++) // 모든 시민 신고 컴포넌트 순회
+            {
+                if (witnesses[i] != null) // 유효 컴포넌트 확인
+                {
+                    witnesses[i].ForceResetForCheckpoint(); // 놀람·신고·완료 상태 초기화
+                }
+            }
+        }
+
         public bool TryQueueCrime(CrimeType type, Vector3 crimePosition, GameObject instigator, bool loud) // 기존 ReportCrime에서 실제 신고 과정 시작
         {
             MapWantedSystem wanted = MapWantedSystem.Instance; // 현재 수배 관리자 조회

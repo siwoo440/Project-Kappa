@@ -162,6 +162,21 @@ namespace ProjectK.Day21 // 21일차 피해·수배 이름 공간
             return true; // 신고 완료 처리 성공
         }
 
+        public void ResetForCheckpoint() // Day32 체크포인트 재시도용 수배·추적 상태 초기화
+        {
+            heat = 0f; // 범죄 Heat 제거
+            stars = 0; // 수배 별 단계 제거
+            currentlySeen = false; // 현재 직접 발각 상태 해제
+            lastCrimeTime = float.NegativeInfinity; // 이전 범죄 감소 기준 초기화
+            lastSeenTime = float.NegativeInfinity; // 이전 목격 시각 초기화
+            decayGateUntil = 0f; // Heat 감소 지연 초기화
+            nextPerceptionCheck = Time.unscaledTime + 0.2f; // 복원 직후 센서 재검사 짧게 지연
+            Vector3 playerPosition = world != null && world.Player != null ? world.Player.transform.position : Vector3.zero; // 복원된 플레이어 위치 조회
+            lastKnownPosition = playerPosition; // 마지막 확인 위치를 안전 위치로 초기화
+            sharedTargetPosition = playerPosition; // 경비 공유 위치도 안전 위치로 초기화
+            sharedTargetUntil = float.NegativeInfinity; // 전체 경비 정확한 위치 공유 종료
+        }
+
         public void ForceSeen(Vector3 playerPosition) // 기존 호출 호환용 직접 발견 처리
         {
             BroadcastDetection(playerPosition); // 한 경비의 발견을 전체 수배 경비에 공유

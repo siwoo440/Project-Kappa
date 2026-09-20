@@ -45,7 +45,7 @@ namespace ProjectK.Day31 // 31일차 공통 미션 시스템 이름 공간
 
         private void OnGUI() // 화면 상단 중앙에 짧은 임무 알림 표시
         {
-            if (Time.unscaledTime >= visibleUntil || Map30MissionWindow.IsOpen) // 알림 종료 또는 Tab 임무 창 상태 확인
+            if (Time.unscaledTime >= visibleUntil || Map30MissionWindow.IsOpen || ProjectK.Day32.Map32MissionResultScreen.IsOpen) // 알림 종료·Tab 임무 창·Day32 결과 화면 상태 확인
             {
                 return; // 알림 숨김
             }

@@ -80,6 +80,11 @@ namespace ProjectK.Day26 // 26일차 목격·신고 이름 공간
             }
         }
 
+        public void ForceResetForCheckpoint() // Day32 재시도 시 시민 목격·신고 상태 즉시 초기화
+        {
+            ResetState(); // 기존 내부 상태 초기화 로직 재사용
+        }
+
         public bool BeginReport(Map26CrimeReportSystem system, int newIncidentId, CrimeType type, Vector3 crimePosition, Vector3 reportPosition, bool sawPlayer, float delay) // 새 범죄 목격·신고 시작
         {
             if (!isActiveAndEnabled || system == null || newIncidentId < 0) // 유효한 시민과 사건 확인

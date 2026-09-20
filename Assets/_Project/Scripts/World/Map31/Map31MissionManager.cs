@@ -6,6 +6,7 @@ using UnityEngine; // 런타임 미션 진행과 월드 오브젝트 생성
 using UnityEngine.Rendering; // 런타임 단말기 재질 설정
 using UnityEngine.SceneManagement; // 씬 전환 시 목표 참조 복구
 
+using ProjectK.Day32; // Day32 체크포인트·실패·결과 화면 연동
 namespace ProjectK.Day31 // 31일차 공통 미션 시스템 이름 공간
 {
     [DisallowMultipleComponent] // MissionManager 중복 방지
@@ -33,6 +34,7 @@ namespace ProjectK.Day31 // 31일차 공통 미션 시스템 이름 공간
         public static Map31MissionManager Instance => instance; // 현재 MissionManager 조회
         public string ActiveMissionId => activeMission != null && activeMission.Definition != null ? activeMission.Definition.MissionId : string.Empty; // 현재 진행 임무 ID 조회
         public Map31MissionInventory Inventory => inventory; // 임무 물품 슬롯 조회
+        public int ActiveObjectiveIndex => activeMission != null ? activeMission.ObjectiveIndex : 0; // Day32 체크포인트용 현재 목표 순번
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] // Domain Reload 비활성 환경 초기화
         private static void ResetStatics() // 플레이 시작 정적 상태 초기화
@@ -185,6 +187,7 @@ namespace ProjectK.Day31 // 31일차 공통 미션 시스템 이름 공간
             Map30MissionJournal.SetCurrentObjective(missionId, 0); // 첫 목표 순번 반영
             Map30MissionJournal.Instance?.SelectMission(missionId); // 수락한 임무를 Tab 상세 선택으로 유지
             SyncCurrentObjectiveToUI(); // 왼쪽 상단 단말기에 첫 목표 연결
+            Map32MissionCheckpointSystem.Capture("임무 시작"); // Day32 최초 안전 체크포인트 저장
             Map31MissionToastHUD.Show("MISSION ACCEPTED", state.Definition.Title, 2.0f); // 수락 알림
             return true; // 수락 성공
         }
@@ -259,6 +262,48 @@ namespace ProjectK.Day31 // 31일차 공통 미션 시스템 이름 공간
             return true; // 처리 성공
         }
 
+        public bool RestoreFromCheckpoint(string missionId, int objectiveIndex) // Day32 체크포인트 목표 단계 복원
+        {
+            if (!states.TryGetValue(missionId, out Map31MissionRuntimeState state) || state == null || state.Definition == null || state.Definition.Objectives.Count == 0) // 저장된 임무 정의 확인
+            {
+                return false; // 복원 실패
+            }
+
+            state.Status = Map31MissionRuntimeStatus.Active; // 임무 진행 상태 복구
+            state.ObjectiveIndex = Mathf.Clamp(objectiveIndex, 0, state.Definition.Objectives.Count - 1); // 저장 목표 순번 복구
+            activeMission = state; // 현재 활성 임무 다시 연결
+            pendingTerminalSync = false; // 이전 목표 갱신 예약 제거
+            pendingTerminalClear = false; // 이전 완료 정리 예약 제거
+            Map30MissionJournal.SetMissionStatus(missionId, Map30MissionStatus.Tracking); // Tab 목록 추적 상태 복구
+            Map30MissionJournal.SetCurrentObjective(missionId, state.ObjectiveIndex); // Tab 목표 강조 복구
+            Map30MissionJournal.Instance?.SelectMission(missionId); // 재시도 임무 선택 유지
+            SyncCurrentObjectiveToUI(); // Day29 단말기 현재 목표 재연결
+            return true; // 복원 성공
+        }
+
+        public void AbandonMission(string missionId) // Day32 실패 화면에서 임무 포기·초기화
+        {
+            if (!states.TryGetValue(missionId, out Map31MissionRuntimeState state) || state == null) // 임무 상태 존재 확인
+            {
+                return; // 초기화 생략
+            }
+
+            state.Status = Map31MissionRuntimeStatus.Available; // 다시 수락 가능한 상태로 복구
+            state.ObjectiveIndex = 0; // 첫 목표부터 다시 시작하도록 초기화
+
+            if (activeMission == state) // 현재 활성 임무와 같은지 확인
+            {
+                activeMission = null; // 진행 임무 연결 해제
+            }
+
+            inventory.ClearAll(); // 임무 물품 전체 초기화
+            pendingTerminalSync = false; // 목표 전환 예약 제거
+            pendingTerminalClear = false; // 완료 후 정리 예약 제거
+            Map30MissionJournal.SetMissionStatus(missionId, Map30MissionStatus.Available); // Tab 목록 보유 상태 복구
+            Map30MissionJournal.SetCurrentObjective(missionId, 0); // 첫 목표 강조 복구
+            Map29TerminalObjectiveProvider.ClearObjective(); // 단말기 현재 목표 해제
+        }
+
         public bool NotifyItemAcquired(string itemId) // 이후 아이템 시스템에서 임무 물품 획득 이벤트 전달
         {
             if (string.IsNullOrWhiteSpace(itemId)) // 유효 물품 ID 확인
@@ -310,6 +355,7 @@ namespace ProjectK.Day31 // 31일차 공통 미션 시스템 이름 공간
             Map30MissionJournal.SetMissionStatus(missionId, Map30MissionStatus.Failed); // Tab 목록 실패 상태 반영
             Map29TerminalObjectiveProvider.SetStatus(Map29TerminalObjectiveStatus.Failed, string.IsNullOrWhiteSpace(reason) ? "임무 실패" : reason); // 단말기 실패 표시
             Map31MissionToastHUD.Show("MISSION FAILED", string.IsNullOrWhiteSpace(reason) ? activeMission.Definition.Title : reason, 2.2f, false, true); // 실패 알림
+            Map32MissionResultScreen.ShowFailure(missionId, activeMission.Definition.Title, string.IsNullOrWhiteSpace(reason) ? "임무 실패" : reason, Map32MissionCheckpointSystem.Instance != null ? Map32MissionCheckpointSystem.Instance.CurrentLabel : "체크포인트 없음"); // Day32 실패·재시도 화면 표시
             activeMission = null; // 현재 진행 임무 해제
         }
 
@@ -340,6 +386,11 @@ namespace ProjectK.Day31 // 31일차 공통 미션 시스템 이름 공간
             }
 
             Map30MissionJournal.SetCurrentObjective(activeMission.Definition.MissionId, activeMission.ObjectiveIndex); // Tab 목표 강조를 다음 단계로 이동
+            string checkpointLabel = activeMission.ObjectiveIndex == 1 ? "겹길 시장 진입" :
+                                     activeMission.ObjectiveIndex == 2 ? "운송 기록 조사 완료" :
+                                     activeMission.ObjectiveIndex == 3 ? "린 거점 복귀" :
+                                     "목표 진행 체크포인트"; // 현재 M-01 진행 단계용 체크포인트 이름
+            Map32MissionCheckpointSystem.Capture(checkpointLabel); // 목표·위치·임무 물품 상태 저장
             Map29TerminalObjectiveProvider.SetStatus(Map29TerminalObjectiveStatus.Completed, "목표 완료 · " + objective.Description); // 왼쪽 단말기에 짧은 완료 표시
             Map31MissionToastHUD.Show("OBJECTIVE COMPLETE", objective.Description, 1.3f, true); // 목표 완료 알림
             pendingTerminalSync = true; // 다음 목표 표시 대기 시작
@@ -359,6 +410,7 @@ namespace ProjectK.Day31 // 31일차 공통 미션 시스템 이름 공간
             Map30MissionJournal.SetMissionStatus(missionId, Map30MissionStatus.Completed); // Tab 임무 완료 표시
             Map29TerminalObjectiveProvider.SetStatus(Map29TerminalObjectiveStatus.Completed, "임무 완료 · " + completed.Definition.Title); // 단말기 완료 표시
             Map31MissionToastHUD.Show("MISSION COMPLETE", completed.Definition.Title + "  /  " + completed.Definition.Reward, 2.6f, true); // 완료·보상 알림
+            Map32MissionResultScreen.ShowSuccess(missionId, completed.Definition.Title, completed.Definition.Reward, completed.Definition.NextMissionId); // Day32 완료·보상 결과 화면 표시
             activeMission = null; // 진행 임무 해제
             pendingTerminalSync = false; // 다음 목표 갱신 취소
             pendingTerminalClear = true; // 완료 문구 이후 단말기 정리 예약

@@ -145,6 +145,11 @@ namespace ProjectK.Day30 // 30일차 전체 임무 창 이름 공간
 
         public void Open() // 전체 임무 창 열기와 플레이 입력 잠금
         {
+            if (ProjectK.Day32.Map32MissionResultScreen.IsOpen) // Day32 결과 화면 확인
+            {
+                return; // 실패·완료 결과 화면 위에 Tab 메뉴를 겹쳐 열지 않음
+            }
+
             if (open) // 중복 열기 확인
             {
                 return; // 처리 생략

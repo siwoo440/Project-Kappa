@@ -123,6 +123,27 @@ public sealed class PlayerHealth : MonoBehaviour // 플레이어 체력 자세 �
         }
     }
 
+    public void RestoreFromCheckpoint() // Day32 체크포인트 재시도용 체력·자세·행동 잠금 복구
+    {
+        dead = false; // 사망 상태 해제
+        postureBroken = false; // 자세 붕괴 상태 해제
+        breakTimer = 0f; // 자세 붕괴 타이머 초기화
+        regenDelayTimer = 0f; // 자세 회복 대기 초기화
+        currentHealth = maxHealth; // 체크포인트 재시도 시 체력 완전 복구
+        currentPosture = maxPosture; // 체크포인트 재시도 시 자세 완전 복구
+        resumeMovementAfterBreak = true; // 이동 복구 가능 상태 설정
+        GetComponent<PlayerFirearmController>()?.Interrupt(); // 남아 있는 사격·재장전 예약 제거
+        GetComponent<PlayerCombatController>()?.SetExternalLock(false); // 검 공격 외부 잠금 해제
+        defense?.SetExternalLock(false); // 방어 외부 잠금 해제
+
+        if (movement != null) // 이동 시스템 존재 확인
+        {
+            movement.SetHorizontalVelocity(Vector3.zero); // 수평 관성 제거
+            movement.VerticalVelocity = 0f; // 낙하 속도 제거
+            movement.SetMovementEnabled(true); // 플레이어 이동 복구
+        }
+    }
+
     private void BreakPosture() // 플레이어 자세 붕괴 처리
     {
         resumeMovementAfterBreak = movement != null && movement.MovementEnabled; // 기존 이동 가능 여부 보존

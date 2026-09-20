@@ -42,6 +42,48 @@ namespace ProjectK.Day31 // 31일차 공통 미션 시스템 이름 공간
             return true; // 인계 성공
         }
 
+        public string[] CaptureOwnedItems() // Day32 체크포인트용 보유 임무 물품 복사
+        {
+            string[] result = new string[owned.Count]; // 현재 보유 수만큼 배열 생성
+            owned.CopyTo(result); // HashSet 내용을 배열에 복사
+            return result; // 체크포인트 저장용 배열 반환
+        }
+
+        public string[] CaptureDeliveredItems() // Day32 체크포인트용 인계 기록 복사
+        {
+            string[] result = new string[delivered.Count]; // 현재 인계 수만큼 배열 생성
+            delivered.CopyTo(result); // HashSet 내용을 배열에 복사
+            return result; // 체크포인트 저장용 배열 반환
+        }
+
+        public void RestoreSnapshot(string[] ownedItems, string[] deliveredItems) // Day32 체크포인트 임무 물품 상태 복원
+        {
+            owned.Clear(); // 현재 보유 상태 제거
+            delivered.Clear(); // 현재 인계 기록 제거
+
+            if (ownedItems != null) // 저장된 보유 물품 존재 확인
+            {
+                for (int i = 0; i < ownedItems.Length; i++) // 저장 배열 순회
+                {
+                    if (!string.IsNullOrWhiteSpace(ownedItems[i])) // 유효 ID 확인
+                    {
+                        owned.Add(ownedItems[i]); // 보유 상태 복원
+                    }
+                }
+            }
+
+            if (deliveredItems != null) // 저장된 인계 물품 존재 확인
+            {
+                for (int i = 0; i < deliveredItems.Length; i++) // 저장 배열 순회
+                {
+                    if (!string.IsNullOrWhiteSpace(deliveredItems[i])) // 유효 ID 확인
+                    {
+                        delivered.Add(deliveredItems[i]); // 인계 기록 복원
+                    }
+                }
+            }
+        }
+
         public void ClearAll() // 임무 재시작·디버그용 전체 초기화
         {
             owned.Clear(); // 보유 물품 초기화
