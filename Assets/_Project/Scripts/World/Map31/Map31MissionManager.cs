@@ -142,11 +142,33 @@ namespace ProjectK.Day31 // 31일차 공통 미션 시스템 이름 공간
             return !string.IsNullOrWhiteSpace(missionId) && definitions.ContainsKey(missionId); // 등록 정의 존재 여부 반환
         }
 
+        public bool IsMissionCompleted(string missionId) // Day33 후속 임무 해금용 완료 상태 조회
+        {
+            return states.TryGetValue(missionId, out Map31MissionRuntimeState state) &&
+                   state != null &&
+                   state.Status == Map31MissionRuntimeStatus.Completed; // 임무 완료 여부 반환
+        }
+
+        public void RegisterRuntimeTarget(string key, Transform target) // Day33 외부 런타임 목표 Transform 등록
+        {
+            if (string.IsNullOrWhiteSpace(key) || target == null) // 등록 자료 유효성 확인
+            {
+                return; // 잘못된 목표 등록 차단
+            }
+
+            runtimeTargets[key] = target; // 기존 키 갱신 또는 신규 목표 등록
+        }
+
         public bool CanAcceptMission(string missionId) // 현재 선택 임무 수락 가능 여부
         {
             if (!states.TryGetValue(missionId, out Map31MissionRuntimeState state) || state == null) // 등록 런타임 상태 확인
             {
                 return false; // 미지원 임무
+            }
+
+            if (missionId == "M-02" && !IsMissionCompleted("M-01")) // M-02 선행 임무 완료 여부 확인
+            {
+                return false; // M-01 완료 전 M-02 수락 차단
             }
 
             if (state.Status != Map31MissionRuntimeStatus.Available) // 이미 진행·완료·실패 상태 확인
@@ -386,15 +408,36 @@ namespace ProjectK.Day31 // 31일차 공통 미션 시스템 이름 공간
             }
 
             Map30MissionJournal.SetCurrentObjective(activeMission.Definition.MissionId, activeMission.ObjectiveIndex); // Tab 목표 강조를 다음 단계로 이동
-            string checkpointLabel = activeMission.ObjectiveIndex == 1 ? "겹길 시장 진입" :
-                                     activeMission.ObjectiveIndex == 2 ? "운송 기록 조사 완료" :
-                                     activeMission.ObjectiveIndex == 3 ? "린 거점 복귀" :
-                                     "목표 진행 체크포인트"; // 현재 M-01 진행 단계용 체크포인트 이름
+            string checkpointLabel = CheckpointLabelFor(activeMission.Definition.MissionId, activeMission.ObjectiveIndex); // 임무·목표 단계별 체크포인트 이름 계산
             Map32MissionCheckpointSystem.Capture(checkpointLabel); // 목표·위치·임무 물품 상태 저장
             Map29TerminalObjectiveProvider.SetStatus(Map29TerminalObjectiveStatus.Completed, "목표 완료 · " + objective.Description); // 왼쪽 단말기에 짧은 완료 표시
             Map31MissionToastHUD.Show("OBJECTIVE COMPLETE", objective.Description, 1.3f, true); // 목표 완료 알림
             pendingTerminalSync = true; // 다음 목표 표시 대기 시작
             pendingTerminalSyncAt = Time.unscaledTime + 0.75f; // 완료 문구 읽을 짧은 시간 확보
+        }
+
+        private static string CheckpointLabelFor(string missionId, int objectiveIndex) // Day32 체크포인트 이름을 임무별로 변환
+        {
+            if (missionId == "M-01") // M-01 진행 단계 확인
+            {
+                if (objectiveIndex == 1) return "겹길 시장 진입"; // 첫 도착 완료
+                if (objectiveIndex == 2) return "운송 기록 조사 완료"; // 인증 조각 획득 완료
+                if (objectiveIndex == 3) return "린 거점 복귀"; // 최종 인계 직전
+                return "M-01 진행 체크포인트"; // 기타 단계
+            }
+
+            if (missionId == "M-02") // M-02 진행 단계 확인
+            {
+                if (objectiveIndex == 1) return "린 분석 확인"; // 후속 좌표 확인 완료
+                if (objectiveIndex == 2) return "감시 구역 진입"; // 잠입 구역 도착
+                if (objectiveIndex == 3) return "표적 신원 확인"; // 암살 목표 확정
+                if (objectiveIndex == 4) return "표적 제거"; // 표적 처리 완료
+                if (objectiveIndex == 5) return "암호화 장부 확보"; // 증거 회수 완료
+                if (objectiveIndex == 6) return "감시 구역 탈출"; // 린 인계 직전
+                return "M-02 진행 체크포인트"; // 기타 단계
+            }
+
+            return "목표 진행 체크포인트"; // 다른 임무 공통 이름
         }
 
         private void CompleteMission() // 모든 필수 목표 완료
@@ -408,6 +451,13 @@ namespace ProjectK.Day31 // 31일차 공통 미션 시스템 이름 공간
             completed.Status = Map31MissionRuntimeStatus.Completed; // 런타임 완료 상태 적용
             string missionId = completed.Definition.MissionId; // 완료 임무 ID 저장
             Map30MissionJournal.SetMissionStatus(missionId, Map30MissionStatus.Completed); // Tab 임무 완료 표시
+
+            if (missionId == "M-01" && states.TryGetValue("M-02", out Map31MissionRuntimeState unlockedM02) && unlockedM02 != null) // M-01 완료 후 M-02 해금 확인
+            {
+                unlockedM02.Status = Map31MissionRuntimeStatus.Available; // M-02 수락 가능 상태 적용
+                Map30MissionJournal.SetMissionStatus("M-02", Map30MissionStatus.Available); // Tab M-02 잠김 상태 해제
+            }
+
             Map29TerminalObjectiveProvider.SetStatus(Map29TerminalObjectiveStatus.Completed, "임무 완료 · " + completed.Definition.Title); // 단말기 완료 표시
             Map31MissionToastHUD.Show("MISSION COMPLETE", completed.Definition.Title + "  /  " + completed.Definition.Reward, 2.6f, true); // 완료·보상 알림
             Map32MissionResultScreen.ShowSuccess(missionId, completed.Definition.Title, completed.Definition.Reward, completed.Definition.NextMissionId); // Day32 완료·보상 결과 화면 표시
@@ -506,6 +556,43 @@ namespace ProjectK.Day31 // 31일차 공통 미션 시스템 이름 공간
                 Status = Map31MissionRuntimeStatus.Available, // 최초 수락 가능
                 ObjectiveIndex = 0 // 첫 목표 순번
             }; // 런타임 상태 등록
+
+            Map31MissionDefinition m02 = ScriptableObject.CreateInstance<Map31MissionDefinition>(); // 런타임 M-02 MissionData 생성
+            m02.name = "M-02_Runtime"; // 디버그 이름 지정
+            m02.ConfigureRuntime(
+                "M-02",
+                "남겨진 주소 · 추적",
+                "조사 · 잠입 암살",
+                "린",
+                "겹길",
+                "M-01에서 확보한 운송 번호를 분석해 겹길 감시 구역의 표적을 확인한다. 표적을 은밀하게 제거하고 암호화 장부를 회수한 뒤 추적을 벗어나 린에게 전달한다.",
+                "스토리 진행 · 암호화 장부 분석",
+                "M-01 완료",
+                "M-03",
+                Map30MissionCategory.Main,
+                new[]
+                {
+                    "플레이어 사망",
+                    "필수 암호화 장부 진행 불능"
+                },
+                new[]
+                {
+                    new Map31MissionObjectiveData("BRIEF_LIN", Map31MissionObjectiveType.Investigate, "린의 분석 단말기에서 M-01 운송 기록의 후속 좌표를 확인하십시오.", string.Empty, "M02_BRIEF_TERMINAL", "린 분석 단말기", 2.5f),
+                    new Map31MissionObjectiveData("REACH_SURVEILLANCE", Map31MissionObjectiveType.Reach, "겹길의 감시 구역으로 진입하십시오.", string.Empty, "M02_ZONE_ENTRY", "겹길 감시 구역", 7f),
+                    new Map31MissionObjectiveData("VERIFY_TARGET", Map31MissionObjectiveType.Investigate, "감시 단말기에서 표적의 신원을 확인하십시오.", string.Empty, "M02_VERIFY_TERMINAL", "표적 확인 단말기", 2.5f),
+                    new Map31MissionObjectiveData("ELIMINATE_TARGET", Map31MissionObjectiveType.Eliminate, "확인된 표적을 제거하십시오. 발각 전 후방 암살이 가장 안전합니다.", string.Empty, "M02_TARGET", "확인된 표적", 2.5f),
+                    new Map31MissionObjectiveData("ACQUIRE_LEDGER", Map31MissionObjectiveType.Acquire, "표적이 남긴 암호화 장부를 회수하십시오.", string.Empty, "M02_LEDGER", "암호화 장부", 2.5f, requiredItem: "CRYPTO_LEDGER"),
+                    new Map31MissionObjectiveData("ESCAPE_ZONE", Map31MissionObjectiveType.Escape, "암호화 장부를 확보한 채 감시 구역을 이탈하십시오.", string.Empty, "M02_ESCAPE", "탈출 지점", 8f, requiredItem: "CRYPTO_LEDGER"),
+                    new Map31MissionObjectiveData("DELIVER_LEDGER", Map31MissionObjectiveType.Deliver, "린의 분석 단말기에 암호화 장부를 인계하십시오.", string.Empty, "M02_DELIVERY_TERMINAL", "린 분석 단말기", 2.5f, requiredItem: "CRYPTO_LEDGER", deliverItem: "CRYPTO_LEDGER")
+                }); // M-02 조사·잠입 암살 목표 구성
+
+            definitions[m02.MissionId] = m02; // M-02 임무 정의 등록
+            states[m02.MissionId] = new Map31MissionRuntimeState
+            {
+                Definition = m02, // M-02 원본 정의 연결
+                Status = Map31MissionRuntimeStatus.Available, // 내부 상태는 해금 대기 가능 상태
+                ObjectiveIndex = 0 // 첫 목표 순번
+            }; // M-02 런타임 상태 등록
         }
 
         private void TryRegisterJournalData() // Day30 개발용 M-01을 실제 진행 데이터로 교체
@@ -539,6 +626,29 @@ namespace ProjectK.Day31 // 31일차 공통 미션 시스템 이름 공간
                 Map30MissionStatus.Available,
                 objectiveTexts,
                 0); // M-01 개발 Seed를 실제 MissionManager 데이터로 교체
+
+            if (definitions.TryGetValue("M-02", out Map31MissionDefinition m02Definition) && m02Definition != null) // M-02 실제 정의 확인
+            {
+                List<string> m02ObjectiveTexts = new List<string>(); // M-02 Tab 목표 문구 목록
+                for (int i = 0; i < m02Definition.Objectives.Count; i++) // M-02 전체 목표 순회
+                {
+                    m02ObjectiveTexts.Add(m02Definition.Objectives[i].Description); // 실제 목표 설명 복사
+                }
+
+                Map30MissionStatus m02Status = IsMissionCompleted("M-01") ? Map30MissionStatus.Available : Map30MissionStatus.Locked; // M-01 완료 여부에 따른 M-02 표시 상태
+                Map30MissionJournal.AddOrUpdateMission(
+                    m02Definition.MissionId,
+                    m02Definition.Title,
+                    m02Definition.TypeLabel,
+                    m02Definition.Client,
+                    m02Definition.Region,
+                    m02Definition.Summary,
+                    m02Definition.Reward,
+                    m02Definition.Category,
+                    m02Status,
+                    m02ObjectiveTexts,
+                    0); // M-02 개발 Seed를 실제 잠금형 MissionData로 교체
+            }
 
             journalRegistered = true; // Journal 실제 데이터 등록 완료
         }
@@ -714,7 +824,9 @@ namespace ProjectK.Day31 // 31일차 공통 미션 시스템 이름 공간
 
         private static string DisplayItemName(string itemId) // 임무 물품 ID를 HUD용 이름으로 변환
         {
-            return itemId == "BAEKYA_TOKEN" ? "백야 인증 조각" : itemId; // 현재 M-01 물품 이름 반환
+            if (itemId == "BAEKYA_TOKEN") return "백야 인증 조각"; // M-01 임무 물품 이름
+            if (itemId == "CRYPTO_LEDGER") return "암호화 장부"; // M-02 임무 물품 이름
+            return itemId; // 등록되지 않은 ID 원문 반환
         }
 
         private void OnDestroy() // 런타임 MissionData와 재질 정리

@@ -94,9 +94,9 @@ public sealed class PlayerEquipmentHUD : MonoBehaviour // 근접 총기 보조�
             GUI.Label(new Rect(x, y + 60f, width - 26f, 24f), "LMB 공격   RMB 방어·받아치기", bodyStyle); // 근접 조작 안내
         }
 
-        GUI.Label(new Rect(x, y + 126f, width - 26f, 22f), "[R] 마비침 " + (support != null ? support.RemainingDarts + "/" + support.Capacity : "0") + "    [G] " + (consumables != null ? consumables.SelectedName + " x" + consumables.SelectedCount : "---"), bodyStyle); // 보조 장비 한 줄 요약
+        GUI.Label(new Rect(x, y + 126f, width - 26f, 22f), "[R] 마비침 " + (support != null ? support.RemainingDarts + "/" + support.Capacity : "0") + "    [H] " + (consumables != null ? consumables.SelectedName + " x" + consumables.SelectedCount : "---"), bodyStyle); // 보조 장비 한 줄 요약
         Map30UITheme.DrawDivider(new Rect(x, y + 153f, width - 26f, 1f)); // 조작 안내 구분선
-        GUI.Label(new Rect(x, y + 162f, width - 26f, 38f), "1~4 검 / 5~9 총기 / Q·E 교체\nV 아이템 / F 상호작용", bodyStyle); // 핵심 조작만 간결하게 표시
+        GUI.Label(new Rect(x, y + 162f, width - 26f, 38f), "1~4 검 / 5~9 총기 / Q·E 교체\nV 아이템 선택 / H 사용 / G 목표 안내 / F 상호작용", bodyStyle); // 핵심 조작만 간결하게 표시
         GUI.Label(new Rect(x, y + 203f, width - 26f, 23f), equipment.Message, bodyStyle); // 현재 장비 결과·실패 원인
     }
 

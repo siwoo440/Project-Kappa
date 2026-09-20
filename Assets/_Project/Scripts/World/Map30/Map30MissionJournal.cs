@@ -15,7 +15,8 @@ namespace ProjectK.Day30 // 30일차 전체 임무 창 이름 공간
         Available, // 보유·수락 가능
         Tracking, // 현재 추적 중
         Completed, // 완료
-        Failed // 실패
+        Failed, // 실패
+        Locked // 선행 조건 미충족
     }
 
     [Serializable] // 향후 저장 시스템 연결용 직렬화 자료

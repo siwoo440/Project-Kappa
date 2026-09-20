@@ -484,7 +484,11 @@ namespace ProjectK.Day30 // 30일차 전체 임무 창 이름 공간
             string label = string.Empty; // 현재 상태별 액션 문구
             bool clickable = false; // 실제 버튼 활성 여부
 
-            if (entry.Status == Map30MissionStatus.Available) // 수락 가능 임무 확인
+            if (entry.Status == Map30MissionStatus.Locked) // 선행 임무 미완료 상태 확인
+            {
+                label = "잠김 · M-01 완료 필요"; // M-02 해금 조건 안내
+            }
+            else if (entry.Status == Map30MissionStatus.Available) // 수락 가능 임무 확인
             {
                 clickable = manager.CanAcceptMission(entry.MissionId); // 현재 다른 진행 임무 여부 확인
                 label = clickable ? "임무 수락 및 추적" : "다른 임무 진행 중"; // 수락 가능 상태 문구
@@ -499,7 +503,7 @@ namespace ProjectK.Day30 // 30일차 전체 임무 창 이름 공간
             }
             else // 실패 임무 처리
             {
-                clickable = true; // 프로토타입 임무 재시도 허용
+                clickable = true; // 실제 연결 임무 재시도 허용
                 label = "임무 처음부터 재시도"; // 재시도 버튼 문구
             }
 
@@ -569,6 +573,7 @@ namespace ProjectK.Day30 // 30일차 전체 임무 창 이름 공간
         {
             switch (status) // 현재 상태 분기
             {
+                case Map30MissionStatus.Locked: return "잠김"; // 선행 조건 미충족
                 case Map30MissionStatus.Tracking: return "추적 중"; // 현재 추적 임무
                 case Map30MissionStatus.Completed: return "완료"; // 완료 임무
                 case Map30MissionStatus.Failed: return "실패"; // 실패 임무
@@ -580,6 +585,7 @@ namespace ProjectK.Day30 // 30일차 전체 임무 창 이름 공간
         {
             switch (status) // 현재 상태 분기
             {
+                case Map30MissionStatus.Locked: return muted; // 잠김 흐린 청색
                 case Map30MissionStatus.Tracking: return cyan; // 추적 청록
                 case Map30MissionStatus.Completed: return green; // 완료 녹색
                 case Map30MissionStatus.Failed: return Map30UITheme.Danger; // 실패 적색
