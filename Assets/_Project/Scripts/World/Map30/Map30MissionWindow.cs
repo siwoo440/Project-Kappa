@@ -1,5 +1,6 @@
 using ProjectK.Day16; // 본편 월드 참조
 using ProjectK.Day19; // 전체 지도 상태 참조
+using ProjectK.Day31; // Day31 실제 MissionManager 수락·재시도 연동
 using UnityEngine; // IMGUI 기반 전체 임무 창
 using UnityEngine.InputSystem; // Tab·ESC 입력 처리
 
@@ -389,7 +390,7 @@ namespace ProjectK.Day30 // 30일차 전체 임무 창 이름 공간
                 return; // 상세 처리 종료
             }
 
-            Rect scrollRect = new Rect(area.x + 12f, area.y + 12f, area.width - 24f, area.height - 24f); // 상세 스크롤 화면
+            Rect scrollRect = new Rect(area.x + 12f, area.y + 12f, area.width - 24f, area.height - 92f); // 하단 임무 액션 영역을 제외한 상세 스크롤 화면
             Rect viewRect = new Rect(0f, 0f, scrollRect.width - 18f, Mathf.Max(scrollRect.height - 1f, 700f)); // 상세 콘텐츠 가상 영역
             detailScroll = GUI.BeginScrollView(scrollRect, detailScroll, viewRect, false, true); // 상세 세로 스크롤 시작
 
@@ -459,6 +460,64 @@ namespace ProjectK.Day30 // 30일차 전체 임무 창 이름 공간
             }
 
             GUI.EndScrollView(); // 상세 스크롤 종료
+            DrawMissionAction(entry, area); // 하단 수락·진행·재시도 액션 표시
+        }
+
+        private void DrawMissionAction(Map30MissionEntry entry, Rect area) // Day31 MissionManager와 연결된 하단 임무 액션
+        {
+            Rect action = new Rect(area.x + 12f, area.yMax - 68f, area.width - 24f, 54f); // 상세 패널 하단 액션 영역
+            DrawSolid(action, new Color(0.015f, 0.060f, 0.090f, 0.96f)); // 공통 파란색 액션 배경
+            DrawBorder(action, cyan, 1f); // 청록색 액션 외곽선
+
+            Map31MissionManager manager = Map31MissionManager.Instance; // 실제 MissionManager 조회
+            if (manager == null || !manager.SupportsMission(entry.MissionId)) // 아직 실제 진행 시스템이 없는 임무 확인
+            {
+                GUI.Label(new Rect(action.x + 14f, action.y + 15f, action.width - 28f, 24f), "진행 시스템 연결 대기 · 이후 MissionData로 교체", smallStyle); // M-02·S-01 개발 단계 안내
+                return; // 액션 버튼 생략
+            }
+
+            string label = string.Empty; // 현재 상태별 액션 문구
+            bool clickable = false; // 실제 버튼 활성 여부
+
+            if (entry.Status == Map30MissionStatus.Available) // 수락 가능 임무 확인
+            {
+                clickable = manager.CanAcceptMission(entry.MissionId); // 현재 다른 진행 임무 여부 확인
+                label = clickable ? "임무 수락 및 추적" : "다른 임무 진행 중"; // 수락 가능 상태 문구
+            }
+            else if (entry.Status == Map30MissionStatus.Tracking) // 현재 진행 중 임무 확인
+            {
+                label = "현재 목표 추적 중 · Tab을 닫고 진행"; // 진행 상태 안내
+            }
+            else if (entry.Status == Map30MissionStatus.Completed) // 완료 임무 확인
+            {
+                label = "임무 완료"; // 완료 상태 표시
+            }
+            else // 실패 임무 처리
+            {
+                clickable = true; // 프로토타입 임무 재시도 허용
+                label = "임무 처음부터 재시도"; // 재시도 버튼 문구
+            }
+
+            Rect button = new Rect(action.x + 8f, action.y + 8f, action.width - 16f, action.height - 16f); // 실제 버튼 영역
+
+            if (clickable) // 클릭 가능한 상태 확인
+            {
+                if (GUI.Button(button, label, tabStyle)) // 수락 또는 재시도 클릭 확인
+                {
+                    if (entry.Status == Map30MissionStatus.Available) // 신규 수락 확인
+                    {
+                        manager.AcceptMission(entry.MissionId); // 실제 MissionManager에 수락 전달
+                    }
+                    else if (entry.Status == Map30MissionStatus.Failed) // 실패 임무 재시도 확인
+                    {
+                        manager.RestartMission(entry.MissionId); // 첫 목표부터 재시작
+                    }
+                }
+
+                return; // 상태 라벨 중복 출력 방지
+            }
+
+            GUI.Label(button, label, tabStyle); // 클릭 불가 진행·완료 상태 문구 출력
         }
 
         private void DrawInfoRow(float x, ref float y, float width, string label, string value) // 임무 상세 한 줄 정보
