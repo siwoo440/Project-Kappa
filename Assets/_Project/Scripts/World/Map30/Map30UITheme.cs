@@ -16,7 +16,7 @@ namespace ProjectK.Day30 // 30일차 UI 통합 테마 이름 공간
         public static readonly Color Amber = new Color(1f, 0.68f, 0.20f, 1f); // 경고·보유 상태
         public static readonly Color Danger = new Color(1f, 0.30f, 0.34f, 1f); // 위험 상태만 유지할 적색
 
-        public static bool HideGameplayHUD => Map30MissionWindow.IsOpen || ProjectK.Day32.Map32MissionResultScreen.IsOpen; // Tab 임무 창·Day32 결과 화면 동안 일반 HUD 숨김
+        public static bool HideGameplayHUD => Map30MissionWindow.IsOpen || ProjectK.Day32.Map32MissionResultScreen.IsOpen || ProjectK.Day35.Map35PauseMenuHUD.IsOpen; // Tab 임무 창·결과 화면·ESC 메뉴 동안 일반 플레이 HUD 숨김
 
         public static void DrawPanel(Rect rect, bool strong = false) // 공통 청록 패널 출력
         {

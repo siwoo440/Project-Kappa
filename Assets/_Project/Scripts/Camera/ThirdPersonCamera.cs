@@ -13,6 +13,7 @@ public sealed class ThirdPersonCamera : MonoBehaviour // 3인칭 카메라 관�
     [SerializeField] private float distance = 5f; // 기본 카메라 거리
     [SerializeField] private float mouseSensitivity = 0.12f; // 마우스 감도
     [SerializeField] private float gamepadLookSpeed = 140f; // 게임패드 회전 속도
+    [SerializeField] private bool invertY; // Day36 사용자 Y축 반전 설정
     [SerializeField] private float minPitch = -35f; // 최소 상하 각도
     [SerializeField] private float maxPitch = 70f; // 최대 상하 각도
     [SerializeField] private float distanceSmoothTime = 0.04f; // 거리 복귀 보간 시간
@@ -147,16 +148,17 @@ public sealed class ThirdPersonCamera : MonoBehaviour // 3인칭 카메라 관�
 
         Vector2 lookInput = lookAction.ReadValue<Vector2>(); // 시점 입력값 조회
         bool gamepadInput = lookAction.activeControl != null && lookAction.activeControl.device is Gamepad; // 게임패드 입력 확인
+        float verticalSign = invertY ? 1f : -1f; // 기본 시점과 Y축 반전 방향 부호 계산
 
         if (gamepadInput) // 게임패드 입력 처리
         {
             yaw += lookInput.x * gamepadLookSpeed * lookMultiplier * Time.deltaTime; // 게임패드 좌우 회전 적용
-            pitch -= lookInput.y * gamepadLookSpeed * lookMultiplier * Time.deltaTime; // 게임패드 상하 회전 적용
+            pitch += lookInput.y * gamepadLookSpeed * lookMultiplier * Time.deltaTime * verticalSign; // 게임패드 Y축 설정 적용
         }
         else // 마우스 입력 처리
         {
             yaw += lookInput.x * mouseSensitivity * lookMultiplier; // 마우스 좌우 회전 적용
-            pitch -= lookInput.y * mouseSensitivity * lookMultiplier; // 마우스 상하 회전 적용
+            pitch += lookInput.y * mouseSensitivity * lookMultiplier * verticalSign; // 마우스 Y축 설정 적용
         }
 
         pitch = Mathf.Clamp(pitch, minPitch, maxPitch); // 상하 회전 범위 제한
