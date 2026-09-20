@@ -1,6 +1,7 @@
 using ProjectK.Day21; // 수배 경비와 수배 시스템 참조
 using UnityEngine; // 런타임 자동 연결
 
+using ProjectK.Day28; // Day28 런타임 Registry 참조
 namespace ProjectK.Day23 // 23일차 추격 안정화 이름 공간
 {
     [DisallowMultipleComponent] // 부트스트랩 중복 방지
@@ -77,7 +78,7 @@ namespace ProjectK.Day23 // 23일차 추격 안정화 이름 공간
 
         private static void AttachStabilityComponents() // 모든 풀 경비에 보조 안정화 기능 연결
         {
-            MapWantedGuardAgent[] guards = Object.FindObjectsByType<MapWantedGuardAgent>(FindObjectsInactive.Include, FindObjectsSortMode.None); // 활성·비활성 수배 경비 조회
+            var guards = Map28RuntimeRegistry.AllGuards; // 활성·비활성 수배 경비 조회
 
             foreach (MapWantedGuardAgent guard in guards) // 모든 수배 경비 순회
             {
@@ -92,7 +93,7 @@ namespace ProjectK.Day23 // 23일차 추격 안정화 이름 공간
 
         private static void RecycleRemainingGuards() // 수배 해제 뒤 남은 경비 정리
         {
-            MapWantedGuardAgent[] guards = Object.FindObjectsByType<MapWantedGuardAgent>(FindObjectsInactive.Exclude, FindObjectsSortMode.None); // 현재 활성 수배 경비 조회
+            var guards = Map28RuntimeRegistry.ActiveGuards; // 현재 활성 수배 경비 조회
 
             foreach (MapWantedGuardAgent guard in guards) // 활성 경비 순회
             {

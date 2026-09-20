@@ -50,6 +50,10 @@ public sealed class DetectionSensor : MonoBehaviour // 시야 청각 탐지 센�
     private Vector3 lastKnownPosition; // 마지막 확인 위치
     private bool hasLastKnownPosition; // 마지막 위치 존재 여부
     private bool targetVisible; // 현재 시야 확인 상태
+    [SerializeField, Min(0.02f)] private float nearVisionInterval = 0.05f; // 가까운 대상 시야 검사 간격
+    [SerializeField, Min(0.02f)] private float farVisionInterval = 0.20f; // 먼 대상 시야 검사 간격
+    [SerializeField, Min(1f)] private float farVisionDistance = 45f; // 먼 시야 검사 전환 거리
+    private float nextVisionCheck; // 다음 실제 Raycast 시야 검사 시각
 
     public DetectionState State => state; // 탐지 상태 읽기
     public float DetectionProgress => detectionProgress; // 탐지 진행도 읽기
@@ -60,6 +64,7 @@ public sealed class DetectionSensor : MonoBehaviour // 시야 청각 탐지 센�
     private void OnEnable() // 활성화 처리
     {
         NoiseSystem.NoiseEmitted += HandleNoise; // 소음 이벤트 구독
+        nextVisionCheck = 0f; // 활성화 직후 시야 즉시 재검사
     }
 
     private void OnDisable() // 비활성화 처리
@@ -84,7 +89,14 @@ public sealed class DetectionSensor : MonoBehaviour // 시야 청각 탐지 센�
             return; // 탐지 처리 중단
         }
 
-        targetVisible = IsTargetVisible(); // 시야 확인
+        if (Time.unscaledTime >= nextVisionCheck) // 실제 Raycast 시야 검사 시각 확인
+        {
+            float distanceSqr = (target.position - transform.position).sqrMagnitude; // 대상 제곱 거리 계산
+            float farSqr = farVisionDistance * farVisionDistance; // 먼 검사 기준 제곱 거리 계산
+            float interval = distanceSqr <= farSqr ? nearVisionInterval : farVisionInterval; // 거리별 시야 검사 간격 선택
+            nextVisionCheck = Time.unscaledTime + interval; // 다음 Raycast 검사 예약
+            targetVisible = IsTargetVisible(); // 실제 시야 Raycast 결과 캐시
+        }
         if (targetVisible) // 대상 시야 확인
         {
             lastKnownPosition = target.position; // 마지막 위치 갱신
@@ -115,6 +127,7 @@ public sealed class DetectionSensor : MonoBehaviour // 시야 청각 탐지 센�
         visionAngle = Mathf.Clamp(angle, 1f, 180f); // 시야 각도 저장
         hearingRadius = Mathf.Max(0f, hearing); // 청각 거리 저장
         visionMask = mask; // 시야 마스크 저장
+        nextVisionCheck = 0f; // 설정 변경 직후 시야 즉시 재검사
     }
 
     public void ConfigureVisionSource(Transform source, Vector3 offset) // 회전 렌즈 시야 연결

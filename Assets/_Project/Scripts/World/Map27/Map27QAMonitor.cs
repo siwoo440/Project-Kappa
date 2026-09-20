@@ -6,6 +6,7 @@ using ProjectK.Day26; // 신고 진행 상태 참조
 using UnityEngine; // 런타임 QA와 HUD 처리
 using UnityEngine.InputSystem; // 현재 프로젝트의 새 Input System 사용
 
+using ProjectK.Day28; // Day28 런타임 Registry 참조
 namespace ProjectK.Day27 // 27일차 통합 QA 이름 공간
 {
     [DisallowMultipleComponent] // QA 관리자 중복 방지
@@ -99,7 +100,7 @@ namespace ProjectK.Day27 // 27일차 통합 QA 이름 공간
 
         private void SampleGuardMovement() // 경비 이동량 검사
         {
-            MapWantedGuardAgent[] guards = Object.FindObjectsByType<MapWantedGuardAgent>(FindObjectsInactive.Exclude, FindObjectsSortMode.None); // 활성 경비 조회
+            var guards = Map28RuntimeRegistry.ActiveGuards; // 활성 경비 조회
             MapWantedSystem wanted = MapWantedSystem.Instance; // 현재 수배 상태 조회
 
             foreach (MapWantedGuardAgent guard in guards) // 경비 순회
@@ -116,7 +117,7 @@ namespace ProjectK.Day27 // 27일차 통합 QA 이름 공간
 
         private void SampleCitizenMovement() // 시민 도주 이동량 검사
         {
-            MapCitizenAgent[] citizens = Object.FindObjectsByType<MapCitizenAgent>(FindObjectsInactive.Exclude, FindObjectsSortMode.None); // 활성 시민 조회
+            var citizens = Map28RuntimeRegistry.ActiveCitizens; // 활성 시민 조회
 
             foreach (MapCitizenAgent citizen in citizens) // 시민 순회
             {
@@ -161,10 +162,10 @@ namespace ProjectK.Day27 // 27일차 통합 QA 이름 공간
 
         private void RefreshCounts() // 활성 개체 수 집계
         {
-            activeCitizens = Object.FindObjectsByType<MapCitizenAgent>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Length; // 시민 수
-            activeVehicles = Object.FindObjectsByType<MapTrafficVehicle>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Length; // 차량 수
-            MapWantedGuardAgent[] guards = Object.FindObjectsByType<MapWantedGuardAgent>(FindObjectsInactive.Exclude, FindObjectsSortMode.None); // 경비 조회
-            Map25SurveillanceDrone[] drones = Object.FindObjectsByType<Map25SurveillanceDrone>(FindObjectsInactive.Exclude, FindObjectsSortMode.None); // 드론 조회
+            activeCitizens = Map28RuntimeRegistry.ActiveCitizens.Count; // 시민 수
+            activeVehicles = Map28RuntimeRegistry.ActiveVehicles.Count; // 차량 수
+            var guards = Map28RuntimeRegistry.ActiveGuards; // 경비 조회
+            var drones = Map28RuntimeRegistry.ActiveDrones; // 드론 조회
             activeGuards = 0; // 경비 집계 초기화
             activeHeavy = 0; // E-03 집계 초기화
             activeDrones = 0; // E-04 집계 초기화

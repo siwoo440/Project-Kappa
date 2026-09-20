@@ -2,6 +2,7 @@ using ProjectK.Day16; // 본편 월드 참조
 using ProjectK.Day26; // 시민 목격·지연 신고 시스템 참조
 using UnityEngine; // Heat·수배 UI와 시야 검사
 
+using ProjectK.Day28; // Day28 런타임 Registry 참조
 namespace ProjectK.Day21 // 21일차 피해·수배 이름 공간
 {
     [DisallowMultipleComponent] // 수배 관리자 중복 방지
@@ -183,7 +184,7 @@ namespace ProjectK.Day21 // 21일차 피해·수배 이름 공간
         private void UpdatePerception() // 기존 DetectionSensor를 이용한 직접 발각 검사
         {
             currentlySeen = false; // 이번 검사 기본 미발각 상태
-            DetectionSensor[] sensors = Object.FindObjectsByType<DetectionSensor>(FindObjectsInactive.Exclude, FindObjectsSortMode.None); // 활성 경비·카메라 센서 조회
+            var sensors = Map28RuntimeRegistry.ActiveSensors; // 활성 경비·카메라 센서 조회
 
             foreach (DetectionSensor sensor in sensors) // 모든 보안 센서 순회
             {

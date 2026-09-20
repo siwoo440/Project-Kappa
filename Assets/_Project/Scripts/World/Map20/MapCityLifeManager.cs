@@ -3,6 +3,7 @@ using System.Collections.Generic; // 풀과 교차로 예약 관리
 using ProjectK.Day16; // 본편 월드 참조
 using UnityEngine; // 런타임 차량·시민 관리
 
+using ProjectK.Day28; // Day28 교통 공간 인덱스 참조
 namespace ProjectK.Day20 // 20일차 도시 생활 이름 공간
 {
     [DisallowMultipleComponent] // 도시 생활 관리자 중복 방지
@@ -276,32 +277,10 @@ namespace ProjectK.Day20 // 20일차 도시 생활 이름 공간
             return options[random.Next(0, options.Count)]; // 좌우회전 후보 무작위 선택
         }
 
-        public float VehicleClearance(MapTrafficVehicle vehicle, float maxDistance) // 차량 전방의 가장 가까운 동적 장애물 거리
+        public float VehicleClearance(MapTrafficVehicle vehicle, float maxDistance) // Day28 공간 인덱스 기반 차량 전방 장애물 거리
         {
-            float nearest = maxDistance; // 기본 전방 여유 거리 설정
-            Vector3 position = vehicle.transform.position; // 검사 차량 위치 조회
-            Vector3 forward = vehicle.transform.forward; // 검사 차량 전방 방향 조회
-            foreach (MapTrafficVehicle other in vehiclePool) // 활성 차량 전체 순회
-            {
-                if (other == null || other == vehicle || !other.gameObject.activeInHierarchy) // 자기 자신과 비활성 차량 제외
-                {
-                    continue; // 다음 차량 검사
-                }
-                nearest = Mathf.Min(nearest, ForwardClearance(position, forward, other.transform.position, 2.3f, maxDistance)); // 앞차 거리 갱신
-            }
-            foreach (MapCitizenAgent citizen in citizenPool) // 활성 시민 전체 순회
-            {
-                if (citizen == null || !citizen.gameObject.activeInHierarchy) // 비활성 시민 제외
-                {
-                    continue; // 다음 시민 검사
-                }
-                nearest = Mathf.Min(nearest, ForwardClearance(position, forward, citizen.transform.position, 1.8f, maxDistance)); // 횡단 시민 거리 갱신
-            }
-            if (world != null && world.Player != null) // 플레이어 존재 확인
-            {
-                nearest = Mathf.Min(nearest, ForwardClearance(position, forward, world.Player.transform.position, 2.0f, maxDistance)); // 플레이어 충돌 방지 거리 갱신
-            }
-            return nearest; // 가장 가까운 장애물 거리 반환
+            Transform player = world != null && world.Player != null ? world.Player.transform : null; // 플레이어 Transform 조회
+            return Map28RuntimeRegistry.VehicleClearance(vehicle, maxDistance, player); // 주변 공간 셀만 검사한 전방 거리 반환
         }
 
         private static float ForwardClearance(Vector3 origin, Vector3 forward, Vector3 candidate, float laneRadius, float maxDistance) // 전방 원뿔 대신 간단한 차선 거리 검사
@@ -321,23 +300,9 @@ namespace ProjectK.Day20 // 20일차 도시 생활 이름 공간
             return forwardDistance; // 실제 전방 거리 반환
         }
 
-        public bool IsCrosswalkSafe(Vector3 position) // 시민 횡단 전 주변 차량 안전 확인
+        public bool IsCrosswalkSafe(Vector3 position) // Day28 공간 인덱스 기반 횡단 차량 안전 확인
         {
-            float radiusSqr = crosswalkSafetyRadius * crosswalkSafetyRadius; // 안전 반경 제곱 계산
-            foreach (MapTrafficVehicle vehicle in vehiclePool) // 활성 차량 순회
-            {
-                if (vehicle == null || !vehicle.gameObject.activeInHierarchy) // 비활성 차량 제외
-                {
-                    continue; // 다음 차량 확인
-                }
-                Vector3 delta = vehicle.transform.position - position; // 횡단 지점과 차량 거리 계산
-                delta.y = 0f; // 수평 거리만 사용
-                if (delta.sqrMagnitude <= radiusSqr && vehicle.CurrentSpeed > 0.2f) // 가까운 이동 차량 확인
-                {
-                    return false; // 차량 통과까지 횡단 대기
-                }
-            }
-            return true; // 주변 차량 없음
+            return Map28RuntimeRegistry.IsCrosswalkSafe(position, crosswalkSafetyRadius); // 주변 셀 이동 차량만 검사
         }
 
         public void RecycleVehicle(MapTrafficVehicle vehicle) // 멀어진 차량 풀 회수

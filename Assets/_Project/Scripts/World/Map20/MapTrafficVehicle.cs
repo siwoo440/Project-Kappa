@@ -22,6 +22,8 @@ namespace ProjectK.Day20 // 20일차 도시 생활 이름 공간
         private float currentSpeed; // 현재 실제 이동 속도
         private float stuckTimer; // 장시간 정지 감지 시간
         private float targetDistanceLastFrame; // 이전 목표 거리
+        private float cachedClearance; // 최근 공간 인덱스 전방 여유 거리
+        private float nextClearanceScan; // 다음 전방 장애물 검사 시각
         private bool turning; // 교차로 안 회전 중 여부
         private int reservedIntersection = -1; // 현재 예약한 교차로 번호
         private bool initialized; // 런타임 초기화 여부
@@ -53,6 +55,8 @@ namespace ProjectK.Day20 // 20일차 도시 생활 이름 공간
             reservedIntersection = -1; // 교차로 예약 초기화
             currentSpeed = Mathf.Min(cruiseSpeed, 5f); // 자연스러운 초기 속도 적용
             stuckTimer = 0f; // 막힘 시간 초기화
+            cachedClearance = manager.VehicleScanDistance; // 새 차량 전방 여유 거리 초기화
+            nextClearanceScan = 0f; // 활성화 직후 전방 검사 허용
             float y = manager.RoadHeight; // 도로 표면 높이 조회
             transform.SetPositionAndRotation(MapTrafficMath.LanePoint(currentX, currentZ, direction, manager.World.WorldSize, y), Quaternion.LookRotation(MapTrafficMath.DirectionVector(direction), Vector3.up)); // 시작 차선 위치와 방향 적용
             SetNextIntersectionTarget(); // 첫 다음 교차로 목표 계산
@@ -66,14 +70,21 @@ namespace ProjectK.Day20 // 20일차 도시 생활 이름 공간
             {
                 return; // 주행 처리 중단
             }
-            if ((transform.position - manager.World.Player.transform.position).sqrMagnitude > manager.DespawnDistance * manager.DespawnDistance) // 플레이어와 지나치게 먼 차량 확인
+            float playerDistanceSqr = (transform.position - manager.World.Player.transform.position).sqrMagnitude; // 플레이어와 차량 제곱 거리 한 번만 계산
+            if (playerDistanceSqr > manager.DespawnDistance * manager.DespawnDistance) // 플레이어와 지나치게 먼 차량 확인
             {
                 manager.RecycleVehicle(this); // 멀어진 차량 풀 회수
                 return; // 현재 프레임 처리 종료
             }
             float distance = Vector3.Distance(transform.position, targetPosition); // 현재 목표까지 거리 계산
             bool intersectionBlocked = !turning && distance < manager.IntersectionReserveDistance && !ReserveTargetIntersection(); // 교차로 진입 예약 상태 확인
-            float clearance = manager.VehicleClearance(this, manager.VehicleScanDistance); // 앞차·플레이어·시민까지 남은 거리 조회
+            if (Time.unscaledTime >= nextClearanceScan) // 전방 장애물 재검사 시각 확인
+            {
+                float interval = playerDistanceSqr <= 80f * 80f ? 0.05f : playerDistanceSqr <= 160f * 160f ? 0.12f : 0.25f; // 거리별 교통 검사 간격 선택
+                nextClearanceScan = Time.unscaledTime + interval; // 다음 전방 검사 예약
+                cachedClearance = manager.VehicleClearance(this, manager.VehicleScanDistance); // 공간 인덱스 기반 전방 여유 거리 갱신
+            }
+            float clearance = cachedClearance; // 최근 전방 검사 결과 재사용
             float desiredSpeed = DesiredSpeed(clearance, intersectionBlocked); // 현재 교통 상태 목표 속도 계산
             float rate = desiredSpeed < currentSpeed ? braking : acceleration; // 가속과 감속 속도 선택
             currentSpeed = Mathf.MoveTowards(currentSpeed, desiredSpeed, rate * Time.deltaTime); // 실제 속도 부드럽게 조정
@@ -221,6 +232,8 @@ namespace ProjectK.Day20 // 20일차 도시 생활 이름 공간
             }
             currentSpeed = 0f; // 비활성 차량 속도 초기화
             stuckTimer = 0f; // 비활성 차량 정체 시간 초기화
+            cachedClearance = 0f; // 전방 검사 캐시 초기화
+            nextClearanceScan = 0f; // 다음 활성화 즉시 재검사 허용
         }
     }
 }

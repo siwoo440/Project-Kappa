@@ -5,6 +5,7 @@ using ProjectK.Day24; // 지상·지하 층 판정 참조
 using ProjectK.Day25; // E-04 드론 구분 참조
 using UnityEngine; // 런타임 탐색·거리·시야 처리
 
+using ProjectK.Day28; // Day28 런타임 Registry 참조
 namespace ProjectK.Day26 // 26일차 목격·신고 이름 공간
 {
     [DisallowMultipleComponent] // 중앙 신고 관리자 중복 방지
@@ -191,7 +192,7 @@ namespace ProjectK.Day26 // 26일차 목격·신고 이름 공간
 
         private bool QueueSecurityWitnesses(Incident incident, Vector3 crimePosition, bool loud, Transform player) // 경비·카메라·드론 신고 판정
         {
-            DetectionSensor[] sensors = Object.FindObjectsByType<DetectionSensor>(FindObjectsInactive.Exclude, FindObjectsSortMode.None); // 활성 보안 센서 전체 조회
+            var sensors = Map28RuntimeRegistry.ActiveSensors; // 활성 보안 센서 전체 조회
             bool queued = false; // 보안 신고 예약 여부
 
             foreach (DetectionSensor sensor in sensors) // 보안 센서 순회
@@ -234,7 +235,7 @@ namespace ProjectK.Day26 // 26일차 목격·신고 이름 공간
 
         private bool QueueCitizenWitnesses(Incident incident, Vector3 crimePosition, bool loud, Transform player) // 시민 직접 목격·청취 판정
         {
-            MapCitizenAgent[] citizens = Object.FindObjectsByType<MapCitizenAgent>(FindObjectsInactive.Exclude, FindObjectsSortMode.None); // 활성 시민 전체 조회
+            var citizens = Map28RuntimeRegistry.ActiveCitizens; // 활성 시민 전체 조회
             List<CitizenCandidate> candidates = new List<CitizenCandidate>(); // 신고 후보 시민 목록 준비
 
             foreach (MapCitizenAgent citizen in citizens) // 시민 전체 순회
@@ -336,7 +337,7 @@ namespace ProjectK.Day26 // 26일차 목격·신고 이름 공간
 
         private void RaiseLocalAlert(Vector3 position) // 신고 완료 지역 주변 시민 도주 반응
         {
-            MapCitizenAgent[] citizens = Object.FindObjectsByType<MapCitizenAgent>(FindObjectsInactive.Exclude, FindObjectsSortMode.None); // 활성 시민 조회
+            var citizens = Map28RuntimeRegistry.ActiveCitizens; // 활성 시민 조회
             const float radius = 70f; // 지역 경보 기본 반경
             float radiusSqr = radius * radius; // 반경 제곱 계산
 
@@ -401,7 +402,7 @@ namespace ProjectK.Day26 // 26일차 목격·신고 이름 공간
 
         private void CleanupInvalidWitnesses() // 풀 회수된 시민 신고자 참조 정리
         {
-            Map26CitizenWitness[] activeWitnesses = Object.FindObjectsByType<Map26CitizenWitness>(FindObjectsInactive.Exclude, FindObjectsSortMode.None); // 현재 활성 신고 시민 조회
+            var activeWitnesses = Map28RuntimeRegistry.ActiveCitizenWitnesses; // 현재 활성 신고 시민 조회
             HashSet<int> activeIds = new HashSet<int>(); // 활성 신고 시민 ID 목록
             foreach (Map26CitizenWitness witness in activeWitnesses) // 활성 신고 컴포넌트 순회
             {

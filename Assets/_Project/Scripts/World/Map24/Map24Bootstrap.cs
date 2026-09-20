@@ -1,6 +1,7 @@
 using ProjectK.Day21; // 수배 경비 타입 참조
 using UnityEngine; // 런타임 자동 연결
 
+using ProjectK.Day28; // Day28 런타임 Registry 참조
 namespace ProjectK.Day24 // 24일차 지상·지하 이동 이름 공간
 {
     [DisallowMultipleComponent] // 자동 연결 관리자 중복 방지
@@ -59,7 +60,7 @@ namespace ProjectK.Day24 // 24일차 지상·지하 이동 이름 공간
 
         private static void AttachLayerAgents() // 모든 활성·비활성 수배 경비 처리
         {
-            MapWantedGuardAgent[] guards = Object.FindObjectsByType<MapWantedGuardAgent>(FindObjectsInactive.Include, FindObjectsSortMode.None); // 전체 수배 경비 조회
+            var guards = Map28RuntimeRegistry.AllGuards; // 전체 수배 경비 조회
 
             foreach (MapWantedGuardAgent guard in guards) // 경비 목록 순회
             {

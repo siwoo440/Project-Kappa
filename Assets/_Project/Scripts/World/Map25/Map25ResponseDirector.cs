@@ -5,6 +5,7 @@ using ProjectK.Day24; // 지상·지하 경비 이동 참조
 using UnityEngine; // 런타임 병력 생성·배치
 using UnityEngine.Rendering; // URP 재질 셰이더 확인
 
+using ProjectK.Day28; // Day28 런타임 Registry 참조
 namespace ProjectK.Day25 // 25일차 수배 병력 차별화 이름 공간
 {
     [DisallowMultipleComponent] // 대응 관리자 중복 방지
@@ -452,7 +453,7 @@ namespace ProjectK.Day25 // 25일차 수배 병력 차별화 이름 공간
                 return; // 설정 생략
             }
 
-            MapWantedGuardAgent[] guards = Object.FindObjectsByType<MapWantedGuardAgent>(FindObjectsInactive.Exclude, FindObjectsSortMode.None); // 현재 활성 수배 경비 조회
+            var guards = Map28RuntimeRegistry.ActiveGuards; // 현재 활성 수배 경비 조회
             foreach (MapWantedGuardAgent other in guards) // 활성 경비 순회
             {
                 if (other == null || other == activated || other.Controller == null) // 자기 자신·누락 충돌체 제외
@@ -467,7 +468,7 @@ namespace ProjectK.Day25 // 25일차 수배 병력 차별화 이름 공간
         private bool HasActiveResponseNear(Vector3 point, float radius) // 특수·기본 병력 배치 중복 확인
         {
             float radiusSqr = radius * radius; // 검사 반경 제곱 계산
-            MapWantedGuardAgent[] guards = Object.FindObjectsByType<MapWantedGuardAgent>(FindObjectsInactive.Exclude, FindObjectsSortMode.None); // 현재 활성 지상 경비 조회
+            var guards = Map28RuntimeRegistry.ActiveGuards; // 현재 활성 지상 경비 조회
             foreach (MapWantedGuardAgent guard in guards) // 모든 활성 경비 순회
             {
                 if (guard != null && !guard.IsDead && (guard.transform.position - point).sqrMagnitude < radiusSqr) // 후보 근처 생존 경비 확인

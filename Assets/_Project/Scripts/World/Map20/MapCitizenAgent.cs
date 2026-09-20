@@ -22,6 +22,8 @@ namespace ProjectK.Day20 // 20일차 도시 생활 이름 공간
         private float fleeUntil; // 도주 종료 시각
         private float nextFleeSteer; // 다음 자유 도주 방향 갱신 시각
         private float fleeSideSign = 1f; // 개체별 좌우 도주 편향
+        private float nextCrosswalkSafetyCheck; // 다음 횡단 차량 안전 검사 시각
+        private bool cachedCrosswalkSafe = true; // 최근 횡단 차량 안전 검사 결과
         private Vector3 threatPosition; // 도주 원인이 된 총성 위치
         private Vector3 fleeDirection; // 현재 자유 도주 방향
         private bool initialized; // 초기화 여부
@@ -58,6 +60,8 @@ namespace ProjectK.Day20 // 20일차 도시 생활 이름 공간
             waitTimer = manager.RandomRange(0.2f, 1.4f); // 시민마다 시작 시간 분산
             fleeUntil = 0f; // 도주 상태 초기화
             nextFleeSteer = 0f; // 자유 도주 방향 갱신 시각 초기화
+            nextCrosswalkSafetyCheck = 0f; // 횡단 차량 검사 즉시 허용
+            cachedCrosswalkSafe = true; // 새 시민 횡단 안전 상태 초기화
             fleeDirection = Vector3.zero; // 이전 도주 방향 제거
             fleeSideSign = GetInstanceID() % 2 == 0 ? 1f : -1f; // 개체별 좌우 도주 방향 분산
             Vector3 spawn = manager.PedestrianGraph.Get(currentNode).Position; // 실제 보도 시작 위치 조회
@@ -121,7 +125,19 @@ namespace ProjectK.Day20 // 20일차 도시 생활 이름 공간
                 return; // 다음 프레임 이동
             }
             bool crossing = manager.PedestrianGraph.IsCrosswalk(currentNode, targetNode); // 평상시 연결이 횡단보도인지 확인
-            if (crossing && !manager.IsCrosswalkSafe(transform.position)) // 평상시 횡단 전 차량 확인
+            if (crossing && Time.unscaledTime >= nextCrosswalkSafetyCheck) // 횡단 차량 재검사 시각 확인
+            {
+                float playerDistanceSqr = (transform.position - manager.World.Player.transform.position).sqrMagnitude; // 플레이어와 시민 제곱 거리 계산
+                float interval = playerDistanceSqr <= 80f * 80f ? 0.10f : 0.22f; // 먼 시민 횡단 검사 빈도 감소
+                nextCrosswalkSafetyCheck = Time.unscaledTime + interval; // 다음 횡단 검사 예약
+                cachedCrosswalkSafe = manager.IsCrosswalkSafe(transform.position); // 공간 인덱스 기반 횡단 안전 결과 캐시
+            }
+            if (!crossing) // 일반 보도 이동 확인
+            {
+                cachedCrosswalkSafe = true; // 다음 횡단 진입 전 기본 안전 상태 복구
+                nextCrosswalkSafetyCheck = 0f; // 새 횡단 진입 시 즉시 차량 검사 허용
+            }
+            if (crossing && !cachedCrosswalkSafe) // 캐시된 횡단 안전 상태 확인
             {
                 state = MapCitizenState.Crosswalk; // 횡단 대기 상태 적용
                 return; // 차량이 지나갈 때까지 정지
